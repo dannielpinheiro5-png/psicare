@@ -698,6 +698,61 @@ textarea.form-control { resize: vertical; min-height: 76px; }
   .sh-value { font-size: 30px; }
 }
 </style>
+
+<!-- ═══════════════════════════════════════════
+   PSICARE — CRONÔMETRO DE PERÍODO DE TESTES
+   Injetado automaticamente. Não remover.
+═══════════════════════════════════════════ -->
+<style>
+#psicare-trial-banner {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  z-index: 99999;
+  background: #fff;
+  border: 1.5px solid #DDE8E2;
+  border-radius: 12px;
+  padding: 8px 14px 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+  min-width: 210px;
+  max-width: 92vw;
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.4s, background 0.4s;
+}
+#psicare-trial-banner.trial-warning {
+  border-color: #C47A1A;
+  background: #FEF5E7;
+}
+#psicare-trial-banner.trial-critical {
+  border-color: #B84040;
+  background: #FCEAEA;
+  animation: trialPulse 1.5s infinite;
+}
+@keyframes trialPulse {
+  0%,100% { box-shadow: 0 2px 12px rgba(184,64,64,0.12); }
+  50%      { box-shadow: 0 2px 20px rgba(184,64,64,0.35); }
+}
+#trial-icon { font-size: 17px; flex-shrink: 0; }
+#trial-text { display: flex; flex-direction: column; gap: 1px; }
+#trial-label { font-size: 9px; font-weight: 600; letter-spacing: 0.07em; color: #8A9E97; text-transform: uppercase; }
+#trial-time  { font-size: 14px; font-weight: 700; color: #2A4A3C; font-variant-numeric: tabular-nums; }
+#trial-banner.trial-warning #trial-time  { color: #C47A1A; }
+#trial-banner.trial-critical #trial-time { color: #B84040; }
+#trial-sub   { font-size: 9px; color: #8A9E97; }
+#trial-close {
+  margin-left: auto; background: none; border: none;
+  color: #8A9E97; cursor: pointer; font-size: 13px;
+  padding: 2px 4px; border-radius: 4px; line-height: 1;
+}
+#trial-close:hover { color: #B84040; background: #FCEAEA; }
+@media (max-width: 480px) {
+  #psicare-trial-banner { top: 8px; right: 8px; min-width: 170px; padding: 6px 10px 6px 10px; }
+  #trial-time { font-size: 12px; }
+}
+</style>
 </head>
 <body>
 
@@ -1791,5 +1846,77 @@ updateClock(); setInterval(updateClock, 30000);
 // ═══════════════════════════════════════════════════════════
 renderDashboard();
 </script>
+
+<!-- PSICARE TRIAL SCRIPT -->
+<div id="psicare-trial-banner" role="status" aria-live="polite">
+  <span id="trial-icon">⏱️</span>
+  <div id="trial-text">
+    <span id="trial-label">Período de Teste</span>
+    <span id="trial-time">Carregando...</span>
+    <span id="trial-sub">15 dias gratuitos · PsiCare</span>
+  </div>
+  <button id="trial-close" onclick="document.getElementById('psicare-trial-banner').style.display='none'" title="Fechar">✕</button>
+</div>
+<script>
+(function() {
+  // ─── CONFIGURAÇÃO ───────────────────────────────────────────
+  // Substitua pela data de cadastro real do usuário (ISO 8601)
+  // Em produção, injete via backend: ex. new Date("{{ user.trial_start }}")
+  var TRIAL_START = localStorage.getItem('psicare_trial_start');
+  if (!TRIAL_START) {
+    TRIAL_START = new Date().toISOString();
+    localStorage.setItem('psicare_trial_start', TRIAL_START);
+  }
+  var TRIAL_DAYS = 15;
+  // ────────────────────────────────────────────────────────────
+
+  var trialEnd = new Date(TRIAL_START);
+  trialEnd.setDate(trialEnd.getDate() + TRIAL_DAYS);
+
+  var banner  = document.getElementById('psicare-trial-banner');
+  var timeEl  = document.getElementById('trial-time');
+  var iconEl  = document.getElementById('trial-icon');
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function tick() {
+    var now  = new Date();
+    var diff = trialEnd - now;
+
+    if (diff <= 0) {
+      banner.className = 'trial-critical';
+      iconEl.textContent = '🔒';
+      timeEl.textContent = 'Trial encerrado';
+      // ── BLOQUEIO: redirecione ou exiba modal de contratação ──
+      // window.location.href = '/contratar';
+      return;
+    }
+
+    var days = Math.floor(diff / 86400000);
+    var hrs  = Math.floor((diff % 86400000) / 3600000);
+    var mins = Math.floor((diff % 3600000)  / 60000);
+    var secs = Math.floor((diff % 60000)    / 1000);
+
+    timeEl.textContent = days + 'd ' + pad(hrs) + 'h ' + pad(mins) + 'm ' + pad(secs) + 's';
+
+    if (days < 3) {
+      banner.className = 'trial-critical';
+      iconEl.textContent = '🔴';
+    } else if (days < 5) {
+      banner.className = 'trial-warning';
+      iconEl.textContent = '🟠';
+    } else {
+      banner.className = '';
+      iconEl.textContent = '⏱️';
+    }
+
+    setTimeout(tick, 1000);
+  }
+
+  tick();
+})();
+</script>
+
 </body>
 </html>
+
