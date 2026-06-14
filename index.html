@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PsiCare — Gestão do Consultório</title>
+
+<!-- ════════════════════════════════════════════════
+  EDITAR AQUI: Fontes (não altere sem necessidade)
+════════════════════════════════════════════════ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+
+<style>
+/* ════════════════════════════════════════════════
+   EDITAR AQUI: Paleta de cores do sistema
+   Troque os valores hex para personalizar as cores
+════════════════════════════════════════════════ */
+:root {
+  --brand-primary:   #3D6B57;   /* Verde principal — botões, destaques */
+  --brand-light:     #EBF4EF;   /* Verde claro — fundos suaves */
+  --brand-dark:      #2A4A3C;   /* Verde escuro — header, gradientes */
+  --brand-accent:    #C4866A;   /* Terracota — alertas quentes, acentos */
+  --brand-accent-lt: #F7EDE8;   /* Terracota claro — fundo de alertas */
+
+  --ink:         #1A2420;   /* Texto principal */
+  --ink-mid:     #4A5E57;   /* Texto secundário */
+  --ink-soft:    #8A9E97;   /* Texto auxiliar */
+  --surface:     #F6F9F7;   /* Fundo da página */
+  --card:        #FFFFFF;   /* Fundo dos cards */
+  --border:      #DDE8E2;   /* Bordas */
+
+  --success:     #2A7A50;
+  --success-lt:  #E8F5EE;
+  --warning:     #C47A1A;
+  --warning-lt:  #FEF5E7;
+  --danger:      #B84040;
+  --danger-lt:   #FCEAEA;
+  --info:        #2E6DA4;
+  --info-lt:     #EAF1FA;
+  --whatsapp:    #25D366;
+
+  --radius-sm: 8px;
+  --radius:    14px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 1px 4px rgba(0,0,0,.06);
+  --shadow:    0 2px 12px rgba(0,0,0,.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.12);
+}
+
+/* ════ BASE ════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--surface);
+  color: var(--ink);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* ════ HEADER ════ */
+.app-header {
+  background: var(--brand-dark);
+  color: #fff;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 300;
+  box-shadow: 0 2px 16px rgba(0,0,0,.25);
+}
+.header-brand { display: flex; align-items: center; gap: 10px; }
+.header-logo {
+  width: 36px; height: 36px;
+  background: var(--brand-primary);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.header-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: .3px;
+}
+.header-sub { font-size: 10px; color: rgba(255,255,255,.55); letter-spacing: 1.2px; text-transform: uppercase; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.header-date { font-size: 12px; color: rgba(255,255,255,.6); text-align: right; }
+.btn-google-cal {
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.2);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 5px;
+  letter-spacing: .3px;
+  transition: background .2s;
+}
+.btn-google-cal:hover { background: rgba(255,255,255,.2); }
+
+/* ════ NAV ════ */
+.app-nav {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  position: sticky;
+  top: 61px;
+  z-index: 200;
+}
+.app-nav::-webkit-scrollbar { display: none; }
+.nav-tab {
+  flex-shrink: 0;
+  padding: 13px 18px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-mid);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all .2s;
+  white-space: nowrap;
+  display: flex; align-items: center; gap: 5px;
+  letter-spacing: .2px;
+}
+.nav-tab.active {
+  color: var(--brand-primary);
+  border-bottom-color: var(--brand-primary);
+  background: var(--brand-light);
+}
+.nav-tab:hover:not(.active) { background: var(--surface); }
+.nav-badge {
+  background: var(--brand-accent);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  border-radius: 20px;
+  padding: 1px 6px;
+  min-width: 16px;
+  text-align: center;
+}
+
+/* ════ MAIN ════ */
+.app-main { padding: 18px 16px 90px; max-width: 860px; margin: 0 auto; }
+.section { display: none; }
+.section.active { display: block; }
+
+/* ════ SECTION HEADER ════ */
+.sec-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.sec-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.sec-subtitle { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+
+/* ════ CARDS ════ */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 18px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+/* ════ KPI GRID ════ */
+.kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+.kpi {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  border: 1px solid var(--border);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+.kpi-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--brand-primary);
+  line-height: 1;
+}
+.kpi-label { font-size: 10px; color: var(--ink-soft); margin-top: 4px; text-transform: uppercase; letter-spacing: .8px; font-weight: 600; }
+
+/* ════ SALDO BAR ════ */
+.saldo-hero {
+  background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-primary) 100%);
+  border-radius: var(--radius-lg);
+  padding: 22px 20px;
+  color: #fff;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.saldo-hero::before {
+  content: '';
+  position: absolute;
+  right: -30px; top: -30px;
+  width: 140px; height: 140px;
+  background: rgba(255,255,255,.06);
+  border-radius: 50%;
+}
+.saldo-hero::after {
+  content: '';
+  position: absolute;
+  right: 30px; bottom: -50px;
+  width: 100px; height: 100px;
+  background: rgba(255,255,255,.04);
+  border-radius: 50%;
+}
+.sh-label { font-size: 11px; opacity: .65; text-transform: uppercase; letter-spacing: 1px; }
+.sh-value { font-family: 'Playfair Display', serif; font-size: 38px; font-weight: 700; margin: 4px 0 14px; }
+.sh-row { display: flex; gap: 24px; }
+.sh-mini .sh-mini-label { font-size: 10px; opacity: .6; text-transform: uppercase; letter-spacing: .8px; }
+.sh-mini .sh-mini-val { font-size: 17px; font-weight: 700; margin-top: 2px; }
+
+/* ════ ALERTS ════ */
+.alert {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  border-left: 4px solid;
+}
+.alert-ok      { background: var(--success-lt); border-color: var(--success); color: #1A5C35; }
+.alert-warn    { background: var(--warning-lt); border-color: var(--warning); color: #7A4E00; }
+.alert-danger  { background: var(--danger-lt);  border-color: var(--danger);  color: #7A1A1A; }
+.alert-info    { background: var(--info-lt);    border-color: var(--info);    color: #1A4A7A; }
+.alert-content { flex: 1; }
+.alert-content b { font-weight: 700; }
+
+/* ════ FORMS ════ */
+.form-group { margin-bottom: 13px; }
+.form-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-mid);
+  display: block;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+}
+.form-control {
+  width: 100%;
+  padding: 10px 13px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--surface);
+  transition: border .2s, box-shadow .2s;
+  -webkit-appearance: none;
+}
+.form-control:focus {
+  outline: none;
+  border-color: var(--brand-primary);
+  background: var(--card);
+  box-shadow: 0 0 0 3px rgba(61,107,87,.12);
+}
+textarea.form-control { resize: vertical; min-height: 76px; }
+.form-row  { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.form-hint { font-size: 11px; color: var(--ink-soft); margin-top: 4px; }
+
+/* ════ BUTTONS ════ */
+.btn {
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .18s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  letter-spacing: .2px;
+}
+.btn:active { transform: scale(.97); }
+.btn-primary   { background: var(--brand-primary); color: #fff; }
+.btn-primary:hover { background: var(--brand-dark); }
+.btn-secondary { background: var(--brand-light); color: var(--brand-primary); }
+.btn-secondary:hover { background: #d8ecdf; }
+.btn-danger    { background: var(--danger-lt); color: var(--danger); }
+.btn-danger:hover { background: #f5d5d5; }
+.btn-whatsapp  { background: var(--whatsapp); color: #fff; }
+.btn-whatsapp:hover { background: #1da851; }
+.btn-ghost     { background: transparent; color: var(--ink-mid); border: 1.5px solid var(--border); }
+.btn-ghost:hover { background: var(--surface); }
+.btn-sm  { padding: 7px 13px; font-size: 12px; }
+.btn-xs  { padding: 4px 9px; font-size: 11px; }
+.btn-full { width: 100%; }
+
+/* ════ CHIPS ════ */
+.chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  color: var(--ink-mid);
+  transition: all .15s;
+  white-space: nowrap;
+}
+.chip.active { background: var(--brand-primary); color: #fff; border-color: var(--brand-primary); }
+
+/* ════ SEARCH ════ */
+.search-wrap { position: relative; margin-bottom: 14px; }
+.search-wrap .form-control { padding-left: 38px; }
+.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-soft); font-size: 15px; pointer-events: none; }
+
+/* ════ PATIENT LIST ════ */
+.patient-list { list-style: none; }
+.patient-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background .15s;
+  margin-bottom: 3px;
+  border: 1px solid transparent;
+}
+.patient-item:hover { background: var(--brand-light); border-color: var(--border); }
+.avatar {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: var(--brand-primary);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.patient-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+.patient-meta { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+.badge {
+  font-size: 10px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.badge-ativo   { background: var(--success-lt); color: var(--success); }
+.badge-inativo { background: #f0f0f0; color: #888; }
+.badge-novo    { background: var(--warning-lt); color: var(--warning); }
+
+/* ════ TODAY SLOTS ════ */
+.slot-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.slot-item:last-child { border-bottom: none; }
+.slot-time { font-size: 14px; font-weight: 700; color: var(--brand-primary); min-width: 48px; font-variant-numeric: tabular-nums; }
+.slot-tipo {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  display: inline-block;
+  margin-top: 3px;
+  font-weight: 600;
+}
+.tipo-presencial { background: var(--brand-light); color: var(--brand-primary); }
+.tipo-online     { background: var(--info-lt); color: var(--info); }
+.slot-status {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.st-confirmado { background: var(--success-lt); color: var(--success); }
+.st-aguardando { background: var(--warning-lt); color: var(--warning); }
+.st-cancelado  { background: var(--danger-lt);  color: var(--danger); }
+
+/* ════ AGENDA CARD ════ */
+.ag-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 14px;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow-sm);
+}
+.ag-date-header {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--brand-primary);
+  text-transform: uppercase;
+  letter-spacing: .9px;
+  margin: 14px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ag-date-header.today-header {
+  color: var(--brand-accent);
+}
+
+/* ════ CAIXA / LANCAMENTOS ════ */
+.lanc-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+.lanc-icon {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+.lanc-entrada { background: var(--success-lt); color: var(--success); }
+.lanc-saida   { background: var(--danger-lt);  color: var(--danger); }
+.lanc-desc  { font-size: 13px; font-weight: 600; }
+.lanc-meta  { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+.lanc-val   { font-size: 15px; font-weight: 700; white-space: nowrap; }
+.val-entrada { color: var(--success); }
+.val-saida   { color: var(--danger); }
+
+/* ════ PAYMENT ROWS ════ */
+.pay-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 10px;
+}
+.pay-row:last-child { border-bottom: none; }
+.pay-name { font-size: 14px; font-weight: 600; }
+.pay-info { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+.pay-val  { font-size: 15px; font-weight: 700; color: var(--brand-primary); }
+.pay-badge {
+  font-size: 10px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-weight: 700;
+  display: block;
+  text-align: center;
+  margin-top: 3px;
+  white-space: nowrap;
+}
+.pb-pago     { background: var(--success-lt); color: var(--success); }
+.pb-pendente { background: var(--warning-lt); color: var(--warning); }
+.pb-atrasado { background: var(--danger-lt);  color: var(--danger); }
+
+/* ════ PIX CARD ════ */
+.pix-card {
+  background: linear-gradient(135deg, var(--brand-dark), #3D6B57);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  color: #fff;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.pix-card::before {
+  content: 'PIX';
+  position: absolute;
+  right: -8px; bottom: -16px;
+  font-size: 72px;
+  font-weight: 900;
+  opacity: .07;
+  font-family: 'Playfair Display', serif;
+}
+.pix-type { font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; opacity: .7; margin-bottom: 4px; }
+.pix-key  { font-size: 17px; font-weight: 700; margin-bottom: 6px; word-break: break-all; }
+.pix-name { font-size: 12px; opacity: .75; }
+.pix-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.btn-pix-action {
+  background: rgba(255,255,255,.18);
+  border: 1px solid rgba(255,255,255,.25);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  padding: 6px 13px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s;
+  display: flex; align-items: center; gap: 5px;
+}
+.btn-pix-action:hover { background: rgba(255,255,255,.28); }
+.btn-pix-del { background: rgba(255,100,100,.18); border-color: rgba(255,100,100,.3); }
+
+/* ════ GATEWAY ════ */
+.gateway-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: var(--card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+.gw-logo {
+  width: 46px; height: 46px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.gw-name { font-size: 14px; font-weight: 700; }
+.gw-desc { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+
+/* ════ MSG TEMPLATES ════ */
+.msg-tmpl {
+  background: var(--brand-light);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 12px;
+  position: relative;
+  border-left: 3px solid var(--brand-primary);
+}
+.msg-tmpl-label { font-size: 10px; font-weight: 700; color: var(--brand-primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 7px; }
+.msg-tmpl-text  { font-size: 13px; line-height: 1.6; color: var(--ink); }
+.btn-copy-msg {
+  position: absolute; top: 10px; right: 10px;
+  background: var(--brand-primary); color: #fff;
+  border: none; border-radius: var(--radius-sm);
+  padding: 4px 10px; font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: background .2s;
+}
+.btn-copy-msg:hover { background: var(--brand-dark); }
+
+/* ════ HISTORY ════ */
+.hist-item {
+  border-left: 3px solid var(--brand-primary);
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  background: var(--brand-light);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.hist-date { font-size: 10px; color: var(--ink-soft); font-weight: 700; text-transform: uppercase; letter-spacing: .7px; }
+.hist-text { font-size: 13px; margin-top: 4px; line-height: 1.5; }
+
+/* ════ DETAIL TABS ════ */
+.detail-tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.dt-tab {
+  flex: 1; padding: 10px; text-align: center;
+  font-size: 11px; font-weight: 700; color: var(--ink-soft);
+  cursor: pointer; border-bottom: 3px solid transparent; transition: all .2s;
+  text-transform: uppercase; letter-spacing: .5px;
+}
+.dt-tab.active { color: var(--brand-primary); border-bottom-color: var(--brand-primary); }
+
+/* ════ QR ════ */
+.qr-wrap { background: #fff; padding: 20px; border-radius: var(--radius); display: flex; justify-content: center; margin: 16px 0; border: 1px solid var(--border); }
+
+/* ════ MODAL ════ */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(10,25,18,.5); z-index: 500;
+  align-items: flex-end; justify-content: center;
+  backdrop-filter: blur(2px);
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--card);
+  border-radius: 24px 24px 0 0;
+  padding: 20px 18px 38px;
+  width: 100%; max-width: 620px;
+  max-height: 92vh; overflow-y: auto;
+  animation: slideUp .26s cubic-bezier(.22,.68,0,1.2);
+}
+@keyframes slideUp { from { transform: translateY(100%); opacity: .5; } to { transform: translateY(0); opacity: 1; } }
+.modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 4px; margin: 0 auto 18px; }
+.modal-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+.modal-close { float: right; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--ink-soft); padding: 2px; }
+
+/* ════ WA BUTTON ════ */
+.wa-btn {
+  width: 36px; height: 36px;
+  background: var(--whatsapp); color: #fff;
+  border: none; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; cursor: pointer; flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(37,211,102,.35);
+  transition: transform .15s;
+}
+.wa-btn:hover { transform: scale(1.1); }
+
+/* ════ FAB ════ */
+.fab {
+  position: fixed; bottom: 22px; right: 18px;
+  width: 54px; height: 54px;
+  background: var(--brand-primary); color: #fff;
+  border-radius: 50%; border: none; font-size: 24px;
+  cursor: pointer; z-index: 400;
+  box-shadow: 0 4px 20px rgba(61,107,87,.45);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .15s, box-shadow .15s;
+}
+.fab:hover { transform: scale(1.07); box-shadow: 0 6px 24px rgba(61,107,87,.55); }
+
+/* ════ DIVIDER ════ */
+.divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+/* ════ EMPTY STATE ════ */
+.empty-state { text-align: center; padding: 40px 20px; color: var(--ink-soft); }
+.empty-state .empty-icon { font-size: 38px; margin-bottom: 10px; }
+.empty-state p { font-size: 13px; line-height: 1.7; }
+
+/* ════ INFO BOX (detalhe paciente) ════ */
+.info-box {
+  font-size: 14px;
+  padding: 10px 13px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  min-height: 40px;
+  color: var(--ink);
+  word-break: break-word;
+}
+
+/* ════ RADIO TIPO ════ */
+.radio-group { display: flex; gap: 10px; }
+.radio-option {
+  flex: 1; display: flex; align-items: center; gap: 8px;
+  padding: 10px 13px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer; font-size: 13px; font-weight: 600;
+  transition: all .15s;
+}
+.radio-option.sel-entrada { border-color: var(--success); background: var(--success-lt); color: var(--success); }
+.radio-option.sel-saida   { border-color: var(--danger);  background: var(--danger-lt);  color: var(--danger); }
+.radio-option input[type=radio] { display: none; }
+
+/* ════ GOOGLE AGENDA TIP ════ */
+.gcal-tip {
+  background: var(--info-lt);
+  border: 1px solid #C0D8F0;
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--info);
+  line-height: 1.5;
+}
+.gcal-tip-icon { font-size: 20px; flex-shrink: 0; }
+
+/* ════ RESPONSIVE ════ */
+@media (max-width: 480px) {
+  .form-row, .form-row3 { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .sh-value { font-size: 30px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════
+  EDITAR AQUI: Nome da psicóloga e subtítulo do header
+════════════════════════════════════════════════ -->
+<header class="app-header">
+  <div class="header-brand">
+    <div class="header-logo">🌿</div>
+    <div>
+      <div class="header-title">PsiCare</div>
+      <div class="header-sub">Gestão do Consultório</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div>
+      <div class="header-date" id="headerDate"></div>
+      <div class="header-date" id="headerTime" style="font-size:14px;font-weight:600;text-align:right;"></div>
+    </div>
+    <button class="btn-google-cal" onclick="window.open('https://calendar.google.com','_blank')">
+      📅 Google Agenda
+    </button>
+  </div>
+</header>
+
+<!-- ════ NAV ════ -->
+<nav class="app-nav">
+  <div class="nav-tab active" onclick="showTab('dashboard')" id="tab-dashboard">🏠 Início</div>
+  <div class="nav-tab" onclick="showTab('agenda')" id="tab-agenda">📅 Agenda</div>
+  <div class="nav-tab" onclick="showTab('pacientes')" id="tab-pacientes">👤 Pacientes</div>
+  <div class="nav-tab" onclick="showTab('financeiro')" id="tab-financeiro">💰 Financeiro</div>
+  <div class="nav-tab" onclick="showTab('caixa')" id="tab-caixa">📊 Caixa</div>
+  <div class="nav-tab" onclick="showTab('recebimentos')" id="tab-recebimentos">💳 Recebimentos</div>
+  <div class="nav-tab" onclick="showTab('mensagens')" id="tab-mensagens">💬 Mensagens</div>
+</nav>
+
+<main class="app-main">
+
+<!-- ══════════════════════════════════════
+     INÍCIO — DASHBOARD
+══════════════════════════════════════ -->
+<div class="section active" id="section-dashboard">
+  <div class="sec-header">
+    <div>
+      <div class="sec-title" id="dash-greeting">Olá! 🌱</div>
+      <div class="sec-subtitle" id="dash-sub">Veja o resumo do seu dia</div>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-num" id="kpi-pacientes">0</div><div class="kpi-label">Pacientes ativos</div></div>
+    <div class="kpi"><div class="kpi-num" id="kpi-hoje">0</div><div class="kpi-label">Sessões hoje</div></div>
+    <div class="kpi"><div class="kpi-num" id="kpi-pendentes" style="color:var(--warning)">0</div><div class="kpi-label">Cobranças pendentes</div></div>
+    <div class="kpi"><div class="kpi-num" id="kpi-saldo" style="color:var(--success)">R$0</div><div class="kpi-label">Saldo do mês</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📅 Agenda de Hoje</div>
+    <div id="dash-agenda"><div class="empty-state"><div class="empty-icon">📭</div><p>Nenhuma sessão agendada para hoje.<br>Vá em <b>Agenda</b> para agendar.</p></div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔔 Alertas do Dia</div>
+    <div id="dash-alertas"><div class="alert alert-ok"><div class="alert-content">✅ Tudo em dia! Nenhum alerta pendente.</div></div></div>
+  </div>
+
+  <div class="gcal-tip">
+    <div class="gcal-tip-icon">📅</div>
+    <div>Use o botão <b>"Google Agenda"</b> no topo para abrir sua agenda e enviar convites para os pacientes — exatamente como você já faz. O PsiCare complementa o que o Google não oferece: histórico, cobranças e comunicação.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     AGENDA
+══════════════════════════════════════ -->
+<div class="section" id="section-agenda">
+  <div class="sec-header">
+    <div>
+      <div class="sec-title">Agenda</div>
+      <div class="sec-subtitle">Sessões agendadas por data</div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="abrirModalAgendar()">+ Agendar</button>
+  </div>
+
+  <div class="gcal-tip">
+    <div class="gcal-tip-icon">💡</div>
+    <div>Agende aqui para controle interno. Para enviar o convite ao paciente, use o botão <b>📅 Google Agenda</b> no topo — igual ao que você já envia pelo WhatsApp.</div>
+  </div>
+
+  <div class="chip-row" id="ag-filtro-chips">
+    <div class="chip active" onclick="filtroAg('todos',this)">Todos</div>
+    <div class="chip" onclick="filtroAg('presencial',this)">Presencial</div>
+    <div class="chip" onclick="filtroAg('online',this)">Online</div>
+    <div class="chip" onclick="filtroAg('hoje',this)">Hoje</div>
+  </div>
+
+  <div id="ag-list"><div class="empty-state"><div class="empty-icon">🗓️</div><p>Nenhum agendamento ainda.<br>Toque em <b>+ Agendar</b> para começar.</p></div></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PACIENTES
+══════════════════════════════════════ -->
+<div class="section" id="section-pacientes">
+  <div class="sec-header">
+    <div>
+      <div class="sec-title">Pacientes</div>
+      <div class="sec-subtitle">Ordem alfabética · <span id="pac-count">0</span> cadastrados</div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openModal('modal-novo-paciente')">+ Novo</button>
+  </div>
+
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="form-control" type="text" placeholder="Buscar paciente pelo nome…" oninput="buscarPaciente(this.value)" id="input-busca">
+  </div>
+
+  <div class="chip-row">
+    <div class="chip active" onclick="filtroPac('todos',this)">Todos</div>
+    <div class="chip" onclick="filtroPac('ativo',this)">Ativos</div>
+    <div class="chip" onclick="filtroPac('novo',this)">Novos</div>
+    <div class="chip" onclick="filtroPac('inativo',this)">Inativos</div>
+  </div>
+
+  <ul class="patient-list" id="pac-list">
+    <div class="empty-state"><div class="empty-icon">👤</div><p>Nenhum paciente cadastrado.<br>Toque em <b>+ Novo</b> para adicionar.</p></div>
+  </ul>
+</div>
+
+<!-- ══════════════════════════════════════
+     FINANCEIRO
+══════════════════════════════════════ -->
+<div class="section" id="section-financeiro">
+  <div class="sec-header">
+    <div class="sec-title">Financeiro</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📊 Resumo — <span id="fin-mes-label"></span></div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-num" id="fin-recebido" style="color:var(--success)">R$0</div><div class="kpi-label">Recebido</div></div>
+      <div class="kpi"><div class="kpi-num" id="fin-pendente" style="color:var(--warning)">R$0</div><div class="kpi-label">Pendente</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">💳 Status por Paciente</div>
+    <div class="chip-row">
+      <div class="chip active" onclick="filtroFin('todos',this)">Todos</div>
+      <div class="chip" onclick="filtroFin('pago',this)">Pagos</div>
+      <div class="chip" onclick="filtroFin('pendente',this)">Pendentes</div>
+      <div class="chip" onclick="filtroFin('atrasado',this)">Atrasados</div>
+    </div>
+    <div id="fin-list"><div class="empty-state"><div class="empty-icon">💰</div><p>Nenhum paciente ativo cadastrado.</p></div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     CAIXA
+══════════════════════════════════════ -->
+<div class="section" id="section-caixa">
+  <div class="sec-header">
+    <div>
+      <div class="sec-title">Caixa Diário</div>
+      <div class="sec-subtitle">Entradas e saídas do consultório</div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="abrirLancamento()">+ Lançar</button>
+  </div>
+
+  <div class="saldo-hero">
+    <div class="sh-label">Saldo do Mês</div>
+    <div class="sh-value" id="sh-saldo">R$ 0,00</div>
+    <div class="sh-row">
+      <div class="sh-mini"><div class="sh-mini-label">↑ Entradas</div><div class="sh-mini-val" id="sh-entrada">R$ 0,00</div></div>
+      <div class="sh-mini"><div class="sh-mini-label">↓ Saídas</div><div class="sh-mini-val" id="sh-saida">R$ 0,00</div></div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:14px;">
+    <div class="card-title" style="margin-bottom:10px;">Últimos 7 dias</div>
+    <canvas id="caixa-chart" height="150"></canvas>
+  </div>
+
+  <div class="chip-row" id="caixa-chips">
+    <div class="chip active" onclick="filtroCaixa('todos',this)">Todos</div>
+    <div class="chip" onclick="filtroCaixa('entrada',this)">Entradas</div>
+    <div class="chip" onclick="filtroCaixa('saida',this)">Saídas</div>
+  </div>
+  <div id="caixa-list"><div class="empty-state"><div class="empty-icon">📊</div><p>Nenhum lançamento ainda.<br>Toque em <b>+ Lançar</b> para começar.</p></div></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     RECEBIMENTOS
+══════════════════════════════════════ -->
+<div class="section" id="section-recebimentos">
+  <div class="sec-header">
+    <div class="sec-title">Recebimentos</div>
+  </div>
+
+  <div class="chip-row">
+    <div class="chip active" onclick="recTab('pix',this)">💚 Pix</div>
+    <div class="chip" onclick="recTab('gateway',this)">🔗 Links de Pagamento</div>
+  </div>
+
+  <!-- PIX -->
+  <div id="rec-pix">
+    <button class="btn btn-primary btn-sm" style="margin-bottom:14px;" onclick="openModal('modal-novo-pix')">+ Cadastrar Chave Pix</button>
+    <div id="pix-list"><div class="empty-state"><div class="empty-icon">💳</div><p>Nenhuma chave Pix cadastrada ainda.</p></div></div>
+  </div>
+
+  <!-- GATEWAY -->
+  <div id="rec-gateway" style="display:none">
+    <p style="font-size:13px;color:var(--ink-soft);margin-bottom:14px;">Acesse o gateway para gerar um link de pagamento e envie pelo WhatsApp do consultório.</p>
+    <div class="gateway-item">
+      <div class="gw-logo" style="background:#e8f5ff;">💙</div>
+      <div style="flex:1"><div class="gw-name">Mercado Pago</div><div class="gw-desc">Pix, cartão de crédito e débito</div></div>
+      <button class="btn btn-secondary btn-sm" onclick="window.open('https://www.mercadopago.com.br','_blank')">Acessar</button>
+    </div>
+    <div class="gateway-item">
+      <div class="gw-logo" style="background:#e8fff0;">💚</div>
+      <div style="flex:1"><div class="gw-name">PagSeguro</div><div class="gw-desc">Link de pagamento e QR Code</div></div>
+      <button class="btn btn-secondary btn-sm" onclick="window.open('https://pagseguro.uol.com.br','_blank')">Acessar</button>
+    </div>
+    <div class="gateway-item">
+      <div class="gw-logo" style="background:#f0eeff;">💜</div>
+      <div style="flex:1"><div class="gw-name">Stripe</div><div class="gw-desc">Pagamento internacional</div></div>
+      <button class="btn btn-secondary btn-sm" onclick="window.open('https://stripe.com/br','_blank')">Acessar</button>
+    </div>
+    <div class="divider"></div>
+    <div class="card">
+      <div class="card-title">📲 Enviar Link pelo WhatsApp</div>
+      <div class="form-group"><label class="form-label">Paciente</label><select class="form-control" id="gw-pac"><option value="">Selecionar...</option></select></div>
+      <div class="form-group"><label class="form-label">Link de pagamento gerado</label><input class="form-control" type="url" id="gw-link" placeholder="Cole o link aqui..."></div>
+      <div class="form-group"><label class="form-label">Valor (R$)</label><input class="form-control" type="number" id="gw-valor" placeholder="0,00"></div>
+      <button class="btn btn-whatsapp btn-full" onclick="enviarLinkPag()">📲 Enviar pelo WhatsApp</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MENSAGENS
+══════════════════════════════════════ -->
+<div class="section" id="section-mensagens">
+  <div class="sec-header">
+    <div>
+      <div class="sec-title">Mensagens</div>
+      <div class="sec-subtitle">Templates prontos para o WhatsApp do consultório</div>
+    </div>
+  </div>
+
+<!-- ════════════════════════════════════════════════
+  EDITAR AQUI: Textos dos templates de mensagem
+  Altere o conteúdo entre as tags <span class="msg-tmpl-text">
+════════════════════════════════════════════════ -->
+  <div class="msg-tmpl">
+    <div class="msg-tmpl-label">✅ Confirmação de Consulta</div>
+    <button class="btn-copy-msg" onclick="copiarMsg(this)">Copiar</button>
+    <div class="msg-tmpl-text">Olá, [Nome]! 😊 Passando para confirmar sua consulta amanhã às [Horário]. Qualquer dúvida estou à disposição. Até lá! 🌿</div>
+  </div>
+
+  <div class="msg-tmpl">
+    <div class="msg-tmpl-label">🔔 Lembrete de Pagamento — Dia 20</div>
+    <button class="btn-copy-msg" onclick="copiarMsg(this)">Copiar</button>
+    <div class="msg-tmpl-text">Olá, [Nome]! Lembrando que o pagamento deste mês vence amanhã, dia 20. Qualquer dúvida sobre formas de pagamento é só me chamar. Obrigada! 💚</div>
+  </div>
+
+  <div class="msg-tmpl">
+    <div class="msg-tmpl-label">⚠️ Pagamento em Atraso</div>
+    <button class="btn-copy-msg" onclick="copiarMsg(this)">Copiar</button>
+    <div class="msg-tmpl-text">Olá, [Nome]! Notei que o pagamento deste mês ainda não foi confirmado. Poderia me dar um retorno? Fico no aguardo. Obrigada! 🙏</div>
+  </div>
+
+  <div class="msg-tmpl">
+    <div class="msg-tmpl-label">📅 Cancelamento / Reagendamento</div>
+    <button class="btn-copy-msg" onclick="copiarMsg(this)">Copiar</button>
+    <div class="msg-tmpl-text">Olá, [Nome]! A consulta de [Data] às [Horário] precisará ser remarcada. Qual seria o melhor dia e horário para você? Temos disponibilidade em [Opções]. 😊</div>
+  </div>
+
+  <div class="msg-tmpl">
+    <div class="msg-tmpl-label">🌟 Boas-vindas — Novo Paciente por Indicação</div>
+    <button class="btn-copy-msg" onclick="copiarMsg(this)">Copiar</button>
+    <div class="msg-tmpl-text">Olá, [Nome]! Seja muito bem-vindo(a)! 🌿 Sou a secretária do consultório. Ficamos felizes que chegou até nós. Para agendar sua primeira consulta podemos verificar os horários disponíveis — presencial ou online. Qual prefere?</div>
+  </div>
+
+  <div class="msg-tmpl">
+    <div class="msg-tmpl-label">🧾 Recibo para Imposto de Renda</div>
+    <button class="btn-copy-msg" onclick="copiarMsg(this)">Copiar</button>
+    <div class="msg-tmpl-text">Olá, [Nome]! O recibo de saúde referente às sessões de [Ano] está disponível. Por favor me informe seu CPF para que eu possa enviá-lo corretamente. 📄</div>
+  </div>
+
+  <div class="msg-tmpl">
+    <div class="msg-tmpl-label">📋 Informações sobre Pagamento</div>
+    <button class="btn-copy-msg" onclick="copiarMsg(this)">Copiar</button>
+    <div class="msg-tmpl-text">Olá, [Nome]! O pagamento mensal vence todo dia 20. As formas aceitas são: Pix, cartão ou transferência. Qualquer dúvida é só me chamar! 😊</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="card">
+    <div class="card-title">📲 Envio Direto por Paciente</div>
+    <div class="form-group"><label class="form-label">Paciente</label><select class="form-control" id="msg-pac-sel"><option value="">Selecionar paciente...</option></select></div>
+    <div class="form-group"><label class="form-label">Mensagem</label><textarea class="form-control" id="msg-texto" rows="3" placeholder="Digite a mensagem ou copie um template acima e cole aqui..."></textarea></div>
+    <button class="btn btn-whatsapp btn-full" onclick="enviarWA()">📲 Abrir no WhatsApp</button>
+  </div>
+</div>
+
+</main>
+
+<!-- ════ FAB ════ -->
+<button class="fab" onclick="fabAction()" id="btn-fab" title="Ação rápida">＋</button>
+
+<!-- ══════════════════════════════════════════════════════
+     MODAIS
+══════════════════════════════════════════════════════ -->
+
+<!-- NOVO PACIENTE -->
+<div class="modal-overlay" id="modal-novo-paciente">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <button class="modal-close" onclick="closeModal('modal-novo-paciente')">✕</button>
+  <div class="modal-title">Novo Paciente</div>
+  <div class="form-group"><label class="form-label">Nome completo *</label><input class="form-control" type="text" id="np-nome" placeholder="Nome do paciente"></div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">WhatsApp *</label><input class="form-control" type="tel" id="np-tel" placeholder="(11) 99999-9999"></div>
+    <div class="form-group"><label class="form-label">Data de nascimento</label><input class="form-control" type="date" id="np-nasc"></div>
+  </div>
+  <div class="form-group"><label class="form-label">E-mail</label><input class="form-control" type="email" id="np-email" placeholder="email@exemplo.com"></div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Tipo de atendimento</label>
+      <select class="form-control" id="np-tipo"><option value="presencial">Presencial</option><option value="online">Online</option><option value="ambos">Presencial e Online</option></select>
+    </div>
+    <div class="form-group"><label class="form-label">Dia de pagamento</label>
+      <select class="form-control" id="np-pagdia"><option value="20">Todo dia 20</option><option value="sessao">Por sessão</option><option value="outro">Outra data</option></select>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Valor da sessão (R$)</label><input class="form-control" type="number" id="np-valor" placeholder="0,00"></div>
+    <div class="form-group"><label class="form-label">Como chegou até nós?</label>
+      <select class="form-control" id="np-origem"><option value="indicacao">Indicação</option><option value="instagram">Instagram</option><option value="google">Google</option><option value="outro">Outro</option></select>
+    </div>
+  </div>
+  <div class="form-group"><label class="form-label">Observações iniciais</label><textarea class="form-control" id="np-obs" placeholder="Motivo da consulta, informações relevantes..."></textarea></div>
+  <button class="btn btn-primary btn-full" onclick="salvarPaciente()">💾 Salvar Paciente</button>
+</div>
+</div>
+
+<!-- NOVO AGENDAMENTO -->
+<div class="modal-overlay" id="modal-novo-agendamento">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <button class="modal-close" onclick="closeModal('modal-novo-agendamento')">✕</button>
+  <div class="modal-title">Novo Agendamento</div>
+  <div class="form-group"><label class="form-label">Paciente *</label><select class="form-control" id="ag-pac"><option value="">Selecionar...</option></select></div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Data *</label><input class="form-control" type="date" id="ag-data"></div>
+    <div class="form-group"><label class="form-label">Horário *</label><input class="form-control" type="time" id="ag-hora"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Modalidade</label>
+      <select class="form-control" id="ag-tipo"><option value="presencial">Presencial</option><option value="online">Online</option></select>
+    </div>
+    <div class="form-group"><label class="form-label">Status</label>
+      <select class="form-control" id="ag-status"><option value="confirmado">Confirmado</option><option value="aguardando">Aguardando confirmação</option></select>
+    </div>
+  </div>
+  <div class="form-group"><label class="form-label">Observação interna</label><textarea class="form-control" id="ag-obs" placeholder="Notas desta sessão..."></textarea></div>
+  <button class="btn btn-primary btn-full" onclick="salvarAgendamento()">💾 Salvar Agendamento</button>
+  <div class="divider"></div>
+  <div class="gcal-tip" style="margin-bottom:0;">
+    <div class="gcal-tip-icon">📅</div>
+    <div style="font-size:12px;">Após salvar, envie o convite pelo <b>Google Agenda</b> para o paciente receber no WhatsApp — igual você já faz.</div>
+  </div>
+</div>
+</div>
+
+<!-- LANÇAMENTO DE CAIXA -->
+<div class="modal-overlay" id="modal-lancamento">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <button class="modal-close" onclick="closeModal('modal-lancamento')">✕</button>
+  <div class="modal-title">Novo Lançamento</div>
+  <div class="form-group">
+    <label class="form-label">Tipo *</label>
+    <div class="radio-group">
+      <label class="radio-option" id="opt-entrada" onclick="selecionarTipo('entrada')">
+        <input type="radio" name="lanc-tipo" value="entrada" checked> ↑ Entrada
+      </label>
+      <label class="radio-option" id="opt-saida" onclick="selecionarTipo('saida')">
+        <input type="radio" name="lanc-tipo" value="saida"> ↓ Saída
+      </label>
+    </div>
+  </div>
+  <div class="form-group"><label class="form-label">Descrição *</label><input class="form-control" type="text" id="lanc-desc" placeholder="Ex: Sessão Ana Lima, Aluguel consultório..."></div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Valor (R$) *</label><input class="form-control" type="number" id="lanc-val" placeholder="0,00"></div>
+    <div class="form-group"><label class="form-label">Data *</label><input class="form-control" type="date" id="lanc-data"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Categoria</label>
+      <select class="form-control" id="lanc-cat">
+<!-- ════════════════════════════════════════════════
+  EDITAR AQUI: Categorias do caixa — adicione ou remova <option>
+════════════════════════════════════════════════ -->
+        <option value="sessao">Sessão</option>
+        <option value="plano">Plano de saúde</option>
+        <option value="aluguel">Aluguel consultório</option>
+        <option value="material">Material</option>
+        <option value="curso">Curso / Supervisão</option>
+        <option value="marketing">Marketing</option>
+        <option value="impostos">Impostos / Nota Fiscal</option>
+        <option value="outro">Outro</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Forma de pagamento</label>
+      <select class="form-control" id="lanc-forma">
+        <option value="pix">Pix</option>
+        <option value="dinheiro">Dinheiro</option>
+        <option value="cartao">Cartão</option>
+        <option value="transferencia">Transferência</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group"><label class="form-label">Paciente relacionado (opcional)</label><select class="form-control" id="lanc-pac"><option value="">Nenhum</option></select></div>
+  <button class="btn btn-primary btn-full" onclick="salvarLancamento()">💾 Salvar Lançamento</button>
+</div>
+</div>
+
+<!-- NOVO PIX -->
+<div class="modal-overlay" id="modal-novo-pix">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <button class="modal-close" onclick="closeModal('modal-novo-pix')">✕</button>
+  <div class="modal-title">Cadastrar Chave Pix</div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Tipo de chave</label>
+      <select class="form-control" id="pix-tipo"><option value="cpf">CPF</option><option value="cnpj">CNPJ</option><option value="email">E-mail</option><option value="telefone">Telefone</option><option value="aleatoria">Chave aleatória</option></select>
+    </div>
+    <div class="form-group"><label class="form-label">Banco</label><input class="form-control" type="text" id="pix-banco" placeholder="Nubank, Itaú..."></div>
+  </div>
+  <div class="form-group"><label class="form-label">Chave Pix *</label><input class="form-control" type="text" id="pix-chave" placeholder="Digite a chave..."></div>
+  <div class="form-group"><label class="form-label">Nome do titular</label><input class="form-control" type="text" id="pix-nome" placeholder="Nome que aparece no recebimento"></div>
+  <button class="btn btn-primary btn-full" onclick="salvarPix()">💾 Salvar Chave Pix</button>
+</div>
+</div>
+
+<!-- QR CODE -->
+<div class="modal-overlay" id="modal-qr">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <button class="modal-close" onclick="closeModal('modal-qr')">✕</button>
+  <div class="modal-title" id="qr-title">QR Code Pix</div>
+  <div class="qr-wrap"><div id="qr-container"></div></div>
+  <p style="text-align:center;font-size:13px;color:var(--ink-soft);margin-bottom:14px;" id="qr-chave-txt"></p>
+  <button class="btn btn-secondary btn-full" onclick="copiarChavePix()">📋 Copiar Chave</button>
+</div>
+</div>
+
+<!-- DETALHE DO PACIENTE -->
+<div class="modal-overlay" id="modal-detalhe">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <button class="modal-close" onclick="closeModal('modal-detalhe')">✕</button>
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+    <div class="avatar" id="det-av" style="width:50px;height:50px;font-size:18px;">?</div>
+    <div style="flex:1;">
+      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;" id="det-nome">—</div>
+      <div style="font-size:11px;color:var(--ink-soft);" id="det-meta">—</div>
+    </div>
+    <button class="wa-btn" onclick="waRapido()" title="Abrir WhatsApp">📲</button>
+  </div>
+
+  <div class="detail-tabs">
+    <div class="dt-tab active" onclick="detTab('info',this)">Dados</div>
+    <div class="dt-tab" onclick="detTab('historico',this)">Histórico</div>
+    <div class="dt-tab" onclick="detTab('financeiro',this)">Financeiro</div>
+    <div class="dt-tab" onclick="detTab('agenda',this)">Agenda</div>
+  </div>
+
+  <!-- DADOS -->
+  <div id="det-info">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">WhatsApp</label><div class="info-box" id="det-tel">—</div></div>
+      <div class="form-group"><label class="form-label">E-mail</label><div class="info-box" id="det-email">—</div></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Nascimento</label><div class="info-box" id="det-nasc">—</div></div>
+      <div class="form-group"><label class="form-label">Atendimento</label><div class="info-box" id="det-tipo">—</div></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Pagamento</label><div class="info-box" id="det-pagdia">—</div></div>
+      <div class="form-group"><label class="form-label">Valor da sessão</label><div class="info-box" id="det-valor">—</div></div>
+    </div>
+    <div class="form-group"><label class="form-label">Como chegou</label><div class="info-box" id="det-origem">—</div></div>
+    <div class="form-group"><label class="form-label">Observações</label><div class="info-box" id="det-obs" style="min-height:60px;">—</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="agendarPac()">📅 Agendar</button>
+      <button class="btn btn-whatsapp btn-sm" onclick="waRapido()">📲 WhatsApp</button>
+      <button class="btn btn-danger btn-sm" onclick="excluirPac()">🗑 Excluir</button>
+    </div>
+  </div>
+
+  <!-- HISTÓRICO -->
+  <div id="det-historico" style="display:none">
+    <div class="form-group"><label class="form-label">Nova anotação de sessão</label><textarea class="form-control" id="hist-txt" placeholder="Resumo da sessão, evolução, pontos importantes a lembrar..."></textarea></div>
+    <button class="btn btn-primary btn-sm" onclick="salvarHistorico()">+ Salvar Anotação</button>
+    <div class="divider"></div>
+    <div id="hist-list"><div class="empty-state"><div class="empty-icon">📝</div><p>Nenhuma anotação ainda.</p></div></div>
+  </div>
+
+  <!-- FINANCEIRO DO PACIENTE -->
+  <div id="det-financeiro" style="display:none">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Data do pagamento</label><input class="form-control" type="date" id="fp-data"></div>
+      <div class="form-group"><label class="form-label">Valor recebido (R$)</label><input class="form-control" type="number" id="fp-val" placeholder="0,00"></div>
+    </div>
+    <button class="btn btn-primary btn-sm btn-full" onclick="salvarPagamento()" style="margin-bottom:14px;">+ Registrar Pagamento</button>
+    <div id="fp-list"><div class="empty-state"><div class="empty-icon">💸</div><p>Nenhum pagamento registrado.</p></div></div>
+  </div>
+
+  <!-- AGENDA DO PACIENTE -->
+  <div id="det-agenda" style="display:none">
+    <div id="det-ag-list"><div class="empty-state"><div class="empty-icon">🗓️</div><p>Nenhuma sessão agendada.</p></div></div>
+    <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="agendarPac()">+ Nova Sessão</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  ESTADO — tudo salvo no localStorage (persiste no device)
+// ═══════════════════════════════════════════════════════════
+let DB = {
+  pacientes:    [],   // lista de pacientes
+  agendamentos: [],   // lista de sessões
+  historicos:   {},   // { pacienteId: [{data, texto}] }
+  pagamentos:   {},   // { pacienteId: [{data, valor}] }
+  lancamentos:  [],   // caixa diário
+  pixKeys:      []    // chaves pix cadastradas
+};
+
+function dbLoad() {
+  const s = localStorage.getItem('psicare_v3');
+  if (s) try { DB = JSON.parse(s); } catch(e) {}
+}
+function dbSave() {
+  localStorage.setItem('psicare_v3', JSON.stringify(DB));
+}
+dbLoad();
+
+// ═══════════════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════════════
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
+const initials = n => n.trim().split(/\s+/).slice(0,2).map(w=>w[0].toUpperCase()).join('');
+const today = () => new Date().toISOString().slice(0,10);
+const mesAtual = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; };
+const fmtDate = s => { if(!s)return'—'; const[y,m,d]=s.split('-'); return`${d}/${m}/${y}`; };
+const fmtMoney = v => 'R$ ' + parseFloat(v||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+const ptMes = () => { const m=new Date(); return m.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}); };
+
+// ═══════════════════════════════════════════════════════════
+//  TABS E MODAIS
+// ═══════════════════════════════════════════════════════════
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('section-'+id).classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+  const renders = {
+    dashboard: renderDashboard,
+    agenda: renderAgenda,
+    pacientes: renderPacientes,
+    financeiro: renderFinanceiro,
+    caixa: renderCaixa,
+    recebimentos: renderRecebimentos,
+    mensagens: () => popularSelect('msg-pac-sel')
+  };
+  if (renders[id]) renders[id]();
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  if (id==='modal-novo-agendamento') { popularSelect('ag-pac'); document.getElementById('ag-data').value=today(); }
+  if (id==='modal-lancamento') { popularSelect('lanc-pac'); document.getElementById('lanc-data').value=today(); selecionarTipo('entrada'); }
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click', e=>{ if(e.target===m) m.classList.remove('open'); });
+});
+
+function fabAction() {
+  const a = document.querySelector('.section.active').id.replace('section-','');
+  if (a==='pacientes') openModal('modal-novo-paciente');
+  else if (a==='caixa') abrirLancamento();
+  else if (a==='recebimentos') openModal('modal-novo-pix');
+  else openModal('modal-novo-agendamento');
+}
+
+function popularSelect(id) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  const val = sel.value;
+  const placeholder = id==='ag-pac'||id==='msg-pac-sel'||id==='gw-pac' ? 'Selecionar...' : 'Nenhum';
+  sel.innerHTML = `<option value="">${placeholder}</option>` +
+    DB.pacientes.map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
+  if (val) sel.value = val;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PACIENTES
+// ═══════════════════════════════════════════════════════════
+let curPid = null, pfiltro = 'todos', pbusca = '';
+
+function salvarPaciente() {
+  const nome = document.getElementById('np-nome').value.trim();
+  if (!nome) { alert('Informe o nome do paciente.'); return; }
+  const p = {
+    id: uid(), nome,
+    tel:    document.getElementById('np-tel').value.trim(),
+    email:  document.getElementById('np-email').value.trim(),
+    nasc:   document.getElementById('np-nasc').value,
+    tipo:   document.getElementById('np-tipo').value,
+    pagdia: document.getElementById('np-pagdia').value,
+    valor:  document.getElementById('np-valor').value,
+    origem: document.getElementById('np-origem').value,
+    obs:    document.getElementById('np-obs').value.trim(),
+    status: 'ativo',
+    criadoEm: today()
+  };
+  DB.pacientes.push(p);
+  DB.pacientes.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  dbSave();
+  closeModal('modal-novo-paciente');
+  ['np-nome','np-tel','np-email','np-nasc','np-valor','np-obs'].forEach(id=>document.getElementById(id).value='');
+  renderPacientes(); renderDashboard();
+}
+
+function filtroPac(t,el) {
+  pfiltro=t;
+  document.querySelectorAll('#section-pacientes .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active'); renderPacientes();
+}
+function buscarPaciente(v) { pbusca=v.toLowerCase(); renderPacientes(); }
+
+function renderPacientes() {
+  const list = document.getElementById('pac-list');
+  let ps = DB.pacientes.filter(p=>
+    p.nome.toLowerCase().includes(pbusca) &&
+    (pfiltro==='todos' || p.status===pfiltro)
+  );
+  document.getElementById('pac-count').textContent = DB.pacientes.length;
+  if (!ps.length) {
+    list.innerHTML='<div class="empty-state"><div class="empty-icon">👤</div><p>Nenhum paciente encontrado.</p></div>';
+    return;
+  }
+  list.innerHTML = ps.map(p=>`
+    <li class="patient-item" onclick="abrirPaciente('${p.id}')">
+      <div class="avatar">${initials(p.nome)}</div>
+      <div style="flex:1;">
+        <div class="patient-name">${p.nome}</div>
+        <div class="patient-meta">${p.tel||'Sem telefone'} · ${p.tipo}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span class="badge badge-${p.status}">${p.status}</span>
+        ${p.tel?`<button class="wa-btn" style="width:30px;height:30px;font-size:13px;" onclick="event.stopPropagation();waMensagem('${p.tel}','Olá ${p.nome}! 😊')">📲</button>`:''}
+      </div>
+    </li>`).join('');
+}
+
+function abrirPaciente(id) {
+  curPid = id;
+  const p = DB.pacientes.find(x=>x.id===id); if(!p) return;
+  document.getElementById('det-av').textContent   = initials(p.nome);
+  document.getElementById('det-nome').textContent = p.nome;
+  document.getElementById('det-meta').textContent = `${p.status.toUpperCase()} · desde ${fmtDate(p.criadoEm)}`;
+  document.getElementById('det-tel').textContent    = p.tel||'—';
+  document.getElementById('det-email').textContent  = p.email||'—';
+  document.getElementById('det-nasc').textContent   = fmtDate(p.nasc);
+  document.getElementById('det-tipo').textContent   = p.tipo||'—';
+  document.getElementById('det-pagdia').textContent = p.pagdia==='20'?'Todo dia 20':p.pagdia==='sessao'?'Por sessão':'Outra data';
+  document.getElementById('det-valor').textContent  = p.valor?fmtMoney(p.valor):'—';
+  document.getElementById('det-origem').textContent = p.origem||'—';
+  document.getElementById('det-obs').textContent    = p.obs||'—';
+  detTab('info', document.querySelector('.dt-tab'));
+  renderHistorico(); renderFinPaciente(); renderAgPaciente();
+  openModal('modal-detalhe');
+}
+
+function detTab(tab, el) {
+  document.querySelectorAll('.dt-tab').forEach(t=>t.classList.remove('active')); el.classList.add('active');
+  ['info','historico','financeiro','agenda'].forEach(t=>
+    document.getElementById('det-'+t).style.display = t===tab?'':'none'
+  );
+}
+
+function excluirPac() {
+  if(!confirm('Excluir este paciente e todos os seus dados?')) return;
+  DB.pacientes = DB.pacientes.filter(x=>x.id!==curPid);
+  delete DB.historicos[curPid]; delete DB.pagamentos[curPid];
+  DB.agendamentos = DB.agendamentos.filter(x=>x.pacienteId!==curPid);
+  dbSave(); closeModal('modal-detalhe');
+  renderPacientes(); renderDashboard();
+}
+
+function agendarPac() { closeModal('modal-detalhe'); openModal('modal-novo-agendamento'); document.getElementById('ag-pac').value=curPid; }
+function waRapido() {
+  const p = DB.pacientes.find(x=>x.id===curPid);
+  if(!p||!p.tel){alert('Paciente sem WhatsApp cadastrado.');return;}
+  waMensagem(p.tel, `Olá ${p.nome}! 😊`);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  HISTÓRICO
+// ═══════════════════════════════════════════════════════════
+function salvarHistorico() {
+  const txt = document.getElementById('hist-txt').value.trim(); if(!txt)return;
+  if(!DB.historicos[curPid]) DB.historicos[curPid]=[];
+  DB.historicos[curPid].unshift({id:uid(),data:today(),texto:txt});
+  dbSave(); document.getElementById('hist-txt').value=''; renderHistorico();
+}
+function renderHistorico() {
+  const list = document.getElementById('hist-list');
+  const h = DB.historicos[curPid]||[];
+  list.innerHTML = !h.length
+    ? '<div class="empty-state"><div class="empty-icon">📝</div><p>Nenhuma anotação ainda.</p></div>'
+    : h.map(x=>`<div class="hist-item"><div class="hist-date">📅 ${fmtDate(x.data)}</div><div class="hist-text">${x.texto}</div></div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FINANCEIRO DO PACIENTE
+// ═══════════════════════════════════════════════════════════
+function salvarPagamento() {
+  const data = document.getElementById('fp-data').value;
+  const val  = document.getElementById('fp-val').value;
+  if(!data||!val){alert('Preencha data e valor.');return;}
+  if(!DB.pagamentos[curPid]) DB.pagamentos[curPid]=[];
+  DB.pagamentos[curPid].unshift({id:uid(),data,valor:parseFloat(val)});
+  // Gera lançamento automático no caixa
+  const p = DB.pacientes.find(x=>x.id===curPid);
+  DB.lancamentos.push({id:uid(),tipo:'entrada',desc:`Sessão — ${p?p.nome:'Paciente'}`,valor:parseFloat(val),data,cat:'sessao',forma:'pix',pacienteId:curPid});
+  dbSave();
+  document.getElementById('fp-data').value=''; document.getElementById('fp-val').value='';
+  renderFinPaciente(); renderFinanceiro(); renderCaixa(); renderDashboard();
+}
+function renderFinPaciente() {
+  const list = document.getElementById('fp-list');
+  const pgs = DB.pagamentos[curPid]||[];
+  list.innerHTML = !pgs.length
+    ? '<div class="empty-state"><div class="empty-icon">💸</div><p>Nenhum pagamento registrado.</p></div>'
+    : pgs.map(x=>`<div class="pay-row"><div><div class="pay-name">Pagamento</div><div class="pay-info">${fmtDate(x.data)}</div></div><div style="text-align:right"><div class="pay-val">${fmtMoney(x.valor)}</div><span class="pay-badge pb-pago">✅ Pago</span></div></div>`).join('');
+}
+function renderAgPaciente() {
+  const list = document.getElementById('det-ag-list');
+  const ags = DB.agendamentos.filter(a=>a.pacienteId===curPid).sort((a,b)=>b.data.localeCompare(a.data));
+  list.innerHTML = !ags.length
+    ? '<div class="empty-state"><div class="empty-icon">🗓️</div><p>Nenhuma sessão agendada.</p></div>'
+    : ags.map(a=>`<div class="ag-card" style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;align-items:center;"><div><b>${fmtDate(a.data)}</b> às <b>${a.hora}</b></div><span class="slot-status st-${a.status}">${fmtStatus(a.status)}</span></div><div style="margin-top:4px;"><span class="slot-tipo tipo-${a.tipo}">${a.tipo}</span>${a.obs?`<span style="font-size:11px;color:var(--ink-soft);margin-left:8px;">${a.obs}</span>`:''}</div></div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  AGENDA
+// ═══════════════════════════════════════════════════════════
+let agFiltro = 'todos';
+function abrirModalAgendar() { openModal('modal-novo-agendamento'); }
+function filtroAg(t,el) {
+  agFiltro=t;
+  document.querySelectorAll('#ag-filtro-chips .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active'); renderAgenda();
+}
+function salvarAgendamento() {
+  const pid   = document.getElementById('ag-pac').value;
+  const data  = document.getElementById('ag-data').value;
+  const hora  = document.getElementById('ag-hora').value;
+  if(!pid||!data||!hora){alert('Preencha paciente, data e horário.');return;}
+  DB.agendamentos.push({id:uid(),pacienteId:pid,data,hora,tipo:document.getElementById('ag-tipo').value,status:document.getElementById('ag-status').value,obs:document.getElementById('ag-obs').value.trim()});
+  DB.agendamentos.sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));
+  dbSave(); closeModal('modal-novo-agendamento');
+  document.getElementById('ag-obs').value='';
+  renderAgenda(); renderDashboard();
+}
+function renderAgenda() {
+  const list = document.getElementById('ag-list');
+  const td = today();
+  let ags = DB.agendamentos.filter(a=>{
+    if(agFiltro==='hoje') return a.data===td;
+    if(agFiltro!=='todos') return a.tipo===agFiltro;
+    return true;
+  });
+  if(!ags.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">🗓️</div><p>Nenhum agendamento encontrado.</p></div>';return;}
+  const grouped={};
+  ags.forEach(a=>{if(!grouped[a.data])grouped[a.data]=[];grouped[a.data].push(a);});
+  let html='';
+  Object.keys(grouped).sort().forEach(date=>{
+    const isT=date===td;
+    html+=`<div class="ag-date-header ${isT?'today-header':''}">${isT?'📍 HOJE — ':'📅 '}${fmtDate(date)}</div>`;
+    grouped[date].sort((a,b)=>a.hora.localeCompare(b.hora)).forEach(a=>{
+      const p=DB.pacientes.find(x=>x.id===a.pacienteId);
+      html+=`<div class="ag-card">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="avatar" style="width:36px;height:36px;font-size:13px;">${p?initials(p.nome):'?'}</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;">${p?p.nome:'Paciente removido'}</div>
+            <div style="font-size:11px;color:var(--ink-soft);">🕐 ${a.hora} · <span class="slot-tipo tipo-${a.tipo}">${a.tipo}</span></div>
+          </div>
+          <span class="slot-status st-${a.status}" onclick="toggleStatus('${a.id}')">${fmtStatus(a.status)}</span>
+        </div>
+        ${a.obs?`<div style="margin-top:8px;font-size:12px;color:var(--ink-soft);padding:8px;background:var(--surface);border-radius:var(--radius-sm);">${a.obs}</div>`:''}
+        <div style="display:flex;gap:7px;margin-top:10px;flex-wrap:wrap;">
+          <button class="btn btn-danger btn-xs" onclick="excluirAg('${a.id}')">Cancelar sessão</button>
+          ${p&&p.tel?`<button class="btn btn-whatsapp btn-xs" onclick="waMensagem('${p.tel}','Olá ${p.nome}! Confirmando sua consulta em ${fmtDate(date)} às ${a.hora}. Confirma? 😊')">📲 Confirmar</button>`:''}
+          <button class="btn btn-secondary btn-xs" onclick="abrirPaciente('${p?p.id:''}')" ${p?'':' disabled'}>Ver paciente</button>
+        </div>
+      </div>`;
+    });
+  });
+  list.innerHTML=html;
+}
+const fmtStatus = s => s==='confirmado'?'✅ Confirmado':s==='aguardando'?'⏳ Aguardando':'❌ Cancelado';
+function toggleStatus(id) {
+  const ag=DB.agendamentos.find(x=>x.id===id); if(!ag)return;
+  const o=['confirmado','aguardando','cancelado'];
+  ag.status=o[(o.indexOf(ag.status)+1)%o.length];
+  dbSave(); renderAgenda(); renderDashboard();
+}
+function excluirAg(id) {
+  if(!confirm('Cancelar este agendamento?'))return;
+  DB.agendamentos=DB.agendamentos.filter(x=>x.id!==id);
+  dbSave(); renderAgenda(); renderDashboard();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FINANCEIRO GERAL
+// ═══════════════════════════════════════════════════════════
+let finFiltro='todos';
+function filtroFin(t,el){
+  finFiltro=t;
+  document.querySelectorAll('#section-financeiro .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active'); renderFinanceiro();
+}
+function renderFinanceiro() {
+  document.getElementById('fin-mes-label').textContent = ptMes();
+  const mes=mesAtual(), td=today();
+  let recebido=0, pendente=0;
+  Object.keys(DB.pagamentos).forEach(pid=>DB.pagamentos[pid].forEach(pg=>{if(pg.data&&pg.data.startsWith(mes))recebido+=pg.valor;}));
+  DB.pacientes.filter(p=>p.status==='ativo').forEach(p=>{
+    const pgs=DB.pagamentos[p.id]||[];
+    const pagou=pgs.some(pg=>pg.data&&pg.data.startsWith(mes));
+    if(!pagou&&p.valor) pendente+=parseFloat(p.valor);
+  });
+  document.getElementById('fin-recebido').textContent=fmtMoney(recebido);
+  document.getElementById('fin-pendente').textContent=fmtMoney(pendente);
+  let rows=DB.pacientes.filter(p=>p.status==='ativo').map(p=>{
+    const pgs=DB.pagamentos[p.id]||[];
+    const pagou=pgs.some(pg=>pg.data&&pg.data.startsWith(mes));
+    const st=pagou?'pago':(p.pagdia==='20'&&td>mes+'-20')?'atrasado':'pendente';
+    return{p,st};
+  });
+  if(finFiltro!=='todos') rows=rows.filter(r=>r.st===finFiltro);
+  const list=document.getElementById('fin-list');
+  if(!rows.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">💰</div><p>Nenhum resultado.</p></div>';return;}
+  list.innerHTML=rows.map(({p,st})=>`
+    <div class="pay-row">
+      <div style="flex:1;">
+        <div class="pay-name">${p.nome}</div>
+        <div class="pay-info">${p.pagdia==='20'?'Vence dia 20':p.pagdia==='sessao'?'Por sessão':'Data específica'}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div class="pay-val">${p.valor?fmtMoney(p.valor):'—'}</div>
+        <span class="pay-badge pb-${st}">${st==='pago'?'✅ Pago':st==='atrasado'?'⚠️ Atrasado':'⏳ Pendente'}</span>
+        ${p.tel&&st!=='pago'?`<br><button class="btn btn-whatsapp btn-xs" style="margin-top:5px;" onclick="waMensagem('${p.tel}','Olá ${p.nome}! ${st==='atrasado'?'O pagamento deste mês está em atraso.':'Lembrando sobre o pagamento deste mês.'} 😊')">📲 Cobrar</button>`:''}
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CAIXA
+// ═══════════════════════════════════════════════════════════
+let caixaFiltro='todos', chartCaixa=null;
+function abrirLancamento() { openModal('modal-lancamento'); }
+function selecionarTipo(t) {
+  document.getElementById('opt-entrada').className='radio-option'+(t==='entrada'?' sel-entrada':'');
+  document.getElementById('opt-saida').className='radio-option'+(t==='saida'?' sel-saida':'');
+  document.querySelector(`input[value="${t}"]`).checked=true;
+}
+function salvarLancamento() {
+  const tipo=document.querySelector('input[name="lanc-tipo"]:checked').value;
+  const desc=document.getElementById('lanc-desc').value.trim();
+  const val =document.getElementById('lanc-val').value;
+  const data=document.getElementById('lanc-data').value;
+  if(!desc||!val||!data){alert('Preencha descrição, valor e data.');return;}
+  DB.lancamentos.push({id:uid(),tipo,desc,valor:parseFloat(val),data,cat:document.getElementById('lanc-cat').value,forma:document.getElementById('lanc-forma').value,pacienteId:document.getElementById('lanc-pac').value||null});
+  dbSave(); closeModal('modal-lancamento');
+  document.getElementById('lanc-desc').value=''; document.getElementById('lanc-val').value='';
+  renderCaixa(); renderDashboard();
+}
+function filtroCaixa(t,el){
+  caixaFiltro=t;
+  document.querySelectorAll('#caixa-chips .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active'); renderCaixa();
+}
+function renderCaixa() {
+  const mes=mesAtual();
+  const mesL=DB.lancamentos.filter(l=>l.data&&l.data.startsWith(mes));
+  const ent=mesL.filter(l=>l.tipo==='entrada').reduce((s,l)=>s+l.valor,0);
+  const sai=mesL.filter(l=>l.tipo==='saida').reduce((s,l)=>s+l.valor,0);
+  document.getElementById('sh-saldo').textContent=fmtMoney(ent-sai);
+  document.getElementById('sh-entrada').textContent=fmtMoney(ent);
+  document.getElementById('sh-saida').textContent=fmtMoney(sai);
+  // Chart
+  const labels=[], entD=[], saiD=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const ds=d.toISOString().slice(0,10);
+    labels.push(fmtDate(ds).slice(0,5));
+    entD.push(DB.lancamentos.filter(l=>l.data===ds&&l.tipo==='entrada').reduce((s,l)=>s+l.valor,0));
+    saiD.push(DB.lancamentos.filter(l=>l.data===ds&&l.tipo==='saida').reduce((s,l)=>s+l.valor,0));
+  }
+  const ctx=document.getElementById('caixa-chart').getContext('2d');
+  if(chartCaixa)chartCaixa.destroy();
+  chartCaixa=new Chart(ctx,{type:'bar',data:{labels,datasets:[
+    {label:'Entradas',data:entD,backgroundColor:'rgba(42,122,80,.7)',borderRadius:6,borderSkipped:false},
+    {label:'Saídas',data:saiD,backgroundColor:'rgba(184,64,64,.65)',borderRadius:6,borderSkipped:false}
+  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12,padding:12}}},scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:'#f0f0f0'},ticks:{font:{size:10},callback:v=>'R$'+v}}}}});
+  // Lista
+  let lans=[...DB.lancamentos].filter(l=>l.data&&l.data.startsWith(mes));
+  if(caixaFiltro!=='todos') lans=lans.filter(l=>l.tipo===caixaFiltro);
+  lans.sort((a,b)=>b.data.localeCompare(a.data));
+  const list=document.getElementById('caixa-list');
+  if(!lans.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">📊</div><p>Nenhum lançamento no mês.</p></div>';return;}
+  list.innerHTML=lans.map(l=>`
+    <div class="lanc-item">
+      <div class="lanc-icon lanc-${l.tipo}">${l.tipo==='entrada'?'↑':'↓'}</div>
+      <div style="flex:1;">
+        <div class="lanc-desc">${l.desc}</div>
+        <div class="lanc-meta">${fmtDate(l.data)} · ${l.cat} · ${l.forma}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="lanc-val val-${l.tipo}">${l.tipo==='entrada'?'+':'-'}${fmtMoney(l.valor)}</div>
+        <button onclick="excluirLanc('${l.id}')" style="background:none;border:none;color:var(--ink-soft);font-size:13px;cursor:pointer;margin-top:2px;" title="Excluir">✕</button>
+      </div>
+    </div>`).join('');
+}
+function excluirLanc(id){DB.lancamentos=DB.lancamentos.filter(x=>x.id!==id);dbSave();renderCaixa();renderDashboard();}
+
+// ═══════════════════════════════════════════════════════════
+//  RECEBIMENTOS / PIX
+// ═══════════════════════════════════════════════════════════
+function recTab(t,el){
+  document.querySelectorAll('#section-recebimentos .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');
+  document.getElementById('rec-pix').style.display=t==='pix'?'':'none';
+  document.getElementById('rec-gateway').style.display=t==='gateway'?'':'none';
+  if(t==='gateway') popularSelect('gw-pac');
+}
+function salvarPix(){
+  const chave=document.getElementById('pix-chave').value.trim();
+  if(!chave){alert('Informe a chave Pix.');return;}
+  DB.pixKeys.push({id:uid(),tipo:document.getElementById('pix-tipo').value,chave,nome:document.getElementById('pix-nome').value.trim(),banco:document.getElementById('pix-banco').value.trim()});
+  dbSave(); closeModal('modal-novo-pix');
+  ['pix-chave','pix-nome','pix-banco'].forEach(i=>document.getElementById(i).value='');
+  renderRecebimentos();
+}
+let pixChaveAtual='';
+function renderRecebimentos(){
+  const list=document.getElementById('pix-list');
+  if(!DB.pixKeys.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">💳</div><p>Nenhuma chave Pix cadastrada.</p></div>';return;}
+  list.innerHTML=DB.pixKeys.map(px=>`
+    <div class="pix-card">
+      <div class="pix-type">${px.tipo.toUpperCase()} · ${px.banco||'—'}</div>
+      <div class="pix-key">${px.chave}</div>
+      <div class="pix-name">👤 ${px.nome||'—'}</div>
+      <div class="pix-actions">
+        <button class="btn-pix-action" onclick="mostrarQR('${px.id}')">📱 QR Code</button>
+        <button class="btn-pix-action" onclick="copiarPix('${px.chave}')">📋 Copiar</button>
+        <button class="btn-pix-action btn-pix-del" onclick="excluirPix('${px.id}')">🗑</button>
+      </div>
+    </div>`).join('');
+}
+function mostrarQR(id){
+  const px=DB.pixKeys.find(x=>x.id===id); if(!px)return;
+  pixChaveAtual=px.chave;
+  document.getElementById('qr-title').textContent='QR Code — '+px.tipo.toUpperCase();
+  document.getElementById('qr-chave-txt').textContent=px.chave;
+  document.getElementById('qr-container').innerHTML='';
+  new QRCode(document.getElementById('qr-container'),{text:px.chave,width:220,height:220,colorDark:'#1A2420',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+  openModal('modal-qr');
+}
+function copiarPix(c){navigator.clipboard.writeText(c).then(()=>alert('Chave copiada!'));}
+function copiarChavePix(){navigator.clipboard.writeText(pixChaveAtual).then(()=>alert('Chave copiada!'));}
+function excluirPix(id){if(!confirm('Remover esta chave?'))return;DB.pixKeys=DB.pixKeys.filter(x=>x.id!==id);dbSave();renderRecebimentos();}
+function enviarLinkPag(){
+  const pid=document.getElementById('gw-pac').value;
+  const link=document.getElementById('gw-link').value.trim();
+  const val=document.getElementById('gw-valor').value;
+  const p=DB.pacientes.find(x=>x.id===pid);
+  if(!p||!p.tel){alert('Selecione um paciente com WhatsApp cadastrado.');return;}
+  if(!link){alert('Cole o link de pagamento.');return;}
+  const msg=`Olá ${p.nome}! 😊 Segue o link para pagamento${val?' no valor de '+fmtMoney(val):''}:\n${link}\nQualquer dúvida é só me chamar! 🌿`;
+  waMensagem(p.tel,msg);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  WHATSAPP
+// ═══════════════════════════════════════════════════════════
+function waMensagem(tel,msg){
+  const n=tel.replace(/\D/g,'');
+  window.open(`https://wa.me/55${n}?text=${encodeURIComponent(msg)}`,'_blank');
+}
+function enviarWA(){
+  const sel=document.getElementById('msg-pac-sel');
+  const pid=sel.value;
+  const p=DB.pacientes.find(x=>x.id===pid);
+  if(!p||!p.tel){alert('Selecione um paciente com WhatsApp cadastrado.');return;}
+  const msg=document.getElementById('msg-texto').value.trim();
+  if(!msg){alert('Digite uma mensagem.');return;}
+  waMensagem(p.tel,msg);
+}
+function copiarMsg(btn){
+  const txt=btn.nextElementSibling.textContent.trim();
+  navigator.clipboard.writeText(txt).then(()=>{btn.textContent='✅ Copiado!';setTimeout(()=>btn.textContent='Copiar',2000);});
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DASHBOARD
+// ═══════════════════════════════════════════════════════════
+function renderDashboard(){
+  const td=today(), mes=mesAtual();
+  // KPIs
+  const ativos=DB.pacientes.filter(p=>p.status==='ativo').length;
+  const sessHoje=DB.agendamentos.filter(a=>a.data===td&&a.status!=='cancelado').length;
+  let pendentes=0;
+  DB.pacientes.filter(p=>p.status==='ativo').forEach(p=>{
+    const pgs=DB.pagamentos[p.id]||[];
+    if(!pgs.some(pg=>pg.data&&pg.data.startsWith(mes))) pendentes++;
+  });
+  const mesL=DB.lancamentos.filter(l=>l.data&&l.data.startsWith(mes));
+  const saldo=mesL.filter(l=>l.tipo==='entrada').reduce((s,l)=>s+l.valor,0)-mesL.filter(l=>l.tipo==='saida').reduce((s,l)=>s+l.valor,0);
+  document.getElementById('kpi-pacientes').textContent=ativos;
+  document.getElementById('kpi-hoje').textContent=sessHoje;
+  document.getElementById('kpi-pendentes').textContent=pendentes;
+  document.getElementById('kpi-saldo').textContent='R$'+saldo.toFixed(0);
+  // Agenda de hoje
+  const agHoje=DB.agendamentos.filter(a=>a.data===td&&a.status!=='cancelado').sort((a,b)=>a.hora.localeCompare(b.hora));
+  const dashAg=document.getElementById('dash-agenda');
+  dashAg.innerHTML=!agHoje.length
+    ?'<div class="empty-state"><div class="empty-icon">📭</div><p>Nenhuma sessão agendada para hoje.</p></div>'
+    :agHoje.map(a=>{
+      const p=DB.pacientes.find(x=>x.id===a.pacienteId);
+      return`<div class="slot-item">
+        <div class="slot-time">${a.hora}</div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:600;">${p?p.nome:'?'}</div>
+          <span class="slot-tipo tipo-${a.tipo}">${a.tipo}</span>
+        </div>
+        ${p&&p.tel?`<button class="wa-btn" onclick="waMensagem('${p.tel}','Olá ${p?p.nome:''}! Confirmando sua consulta hoje às ${a.hora}. Confirma? 😊')" title="Confirmar via WhatsApp">📲</button>`:''}
+        <span class="slot-status st-${a.status}">${a.status==='confirmado'?'✅':'⏳'}</span>
+      </div>`;}).join('');
+  // Alertas
+  const alertas=[];
+  const amanha=new Date(); amanha.setDate(amanha.getDate()+1);
+  const amStr=amanha.toISOString().slice(0,10);
+  DB.pacientes.filter(p=>p.status==='ativo'&&p.pagdia==='20').forEach(p=>{
+    const pagou=(DB.pagamentos[p.id]||[]).some(pg=>pg.data&&pg.data.startsWith(mes));
+    if(!pagou){
+      if(td>mes+'-20') alertas.push(`<div class="alert alert-danger"><div class="alert-content">⚠️ <b>${p.nome}</b> está em atraso no pagamento deste mês.${p.tel?` <button class="btn btn-danger btn-xs" style="margin-left:6px;" onclick="waMensagem('${p.tel}','Olá ${p.nome}! O pagamento deste mês está em atraso. 🙏')">📲 Cobrar</button>`:''}</div></div>`);
+      else if(amStr===mes+'-20'||td===mes+'-19') alertas.push(`<div class="alert alert-warn"><div class="alert-content">🔔 Lembrar <b>${p.nome}</b> do pagamento de amanhã (dia 20).${p.tel?` <button class="btn btn-ghost btn-xs" style="margin-left:6px;" onclick="waMensagem('${p.tel}','Olá ${p.nome}! Lembrando que o pagamento vence amanhã, dia 20. 😊')">📲 Lembrar</button>`:''}</div></div>`);
+    }
+  });
+  // Sessões sem confirmação hoje
+  DB.agendamentos.filter(a=>a.data===td&&a.status==='aguardando').forEach(a=>{
+    const p=DB.pacientes.find(x=>x.id===a.pacienteId);
+    alertas.push(`<div class="alert alert-info"><div class="alert-content">⏳ Sessão de <b>${p?p.nome:'?'}</b> às <b>${a.hora}</b> aguarda confirmação.${p&&p.tel?` <button class="btn btn-ghost btn-xs" style="margin-left:6px;" onclick="waMensagem('${p.tel}','Olá ${p.nome}! Confirmando sua consulta hoje às ${a.hora}. Confirma? 😊')">📲 Confirmar</button>`:''}</div></div>`);
+  });
+  document.getElementById('dash-alertas').innerHTML=alertas.length?alertas.join(''):'<div class="alert alert-ok"><div class="alert-content">✅ Tudo em dia! Nenhum alerta pendente.</div></div>';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CLOCK + SAUDAÇÃO
+// ═══════════════════════════════════════════════════════════
+function updateClock(){
+  const now=new Date();
+  const h=now.getHours();
+  document.getElementById('headerTime').textContent=now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('headerDate').textContent=now.toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'});
+  document.getElementById('dash-greeting').textContent=h<12?'Bom dia! ☀️':h<18?'Boa tarde! 🌤️':'Boa noite! 🌙';
+  document.getElementById('dash-sub').textContent=`${now.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})} · Veja o resumo do seu dia`;
+}
+updateClock(); setInterval(updateClock, 30000);
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+renderDashboard();
+</script>
+</body>
+</html>
