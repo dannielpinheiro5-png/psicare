@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PsiCare — Gestão do Consultório</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- ════ FIREBASE SDK ════ -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<!-- ════ QRCODE & CHART ════ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+
+<style>
+/* ════════════════════════════════════════════════
+   EDITAR AQUI: Paleta de cores
+════════════════════════════════════════════════ */
+:root {
+  --brand:       #3D6B57;
+  --brand-dark:  #2A4A3C;
+  --brand-light: #EBF4EF;
+  --brand-mid:   #7A9E87;
+  --accent:      #C8896F;
+  --accent-lt:   #F7EDE8;
+  --gold:        #C9A96E;
+  --gold-lt:     #EDD9A3;
+  --surface:     #F6F9F7;
+  --card:        #FFFFFF;
+  --border:      #DDE8E2;
+  --ink:         #1A2420;
+  --ink-mid:     #4A5E57;
+  --ink-soft:    #8A9E97;
+  --success:     #2A7A50;
+  --success-lt:  #E8F5EE;
+  --warn:        #C47A1A;
+  --warn-lt:     #FEF5E7;
+  --danger:      #B84040;
+  --danger-lt:   #FCEAEA;
+  --info:        #2E6DA4;
+  --info-lt:     #EAF1FA;
+  --wa:          #25D366;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-tap-highlight-color:transparent;}
+body{font-family:'Inter',sans-serif;background:var(--surface);color:var(--ink);min-height:100vh;font-size:15px;}
+
+/* ════ AUTH SCREEN ════ */
+#auth-screen {
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;background:linear-gradient(135deg,var(--brand-dark) 0%,var(--brand) 60%,var(--brand-mid) 100%);
+  padding:20px;position:relative;overflow:hidden;
+}
+#auth-screen::before {
+  content:'';position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.auth-card {
+  background:var(--card);border-radius:20px;
+  padding:40px 36px;width:100%;max-width:420px;
+  box-shadow:0 24px 64px rgba(0,0,0,.25);position:relative;z-index:1;
+}
+.auth-logo {
+  text-align:center;margin-bottom:28px;
+}
+.auth-psi {
+  width:72px;height:72px;border-radius:50%;
+  background:var(--brand-dark);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 12px;
+  box-shadow:0 8px 24px rgba(42,74,60,.35);
+}
+.auth-psi-symbol {
+  font-size:36px;color:#fff;font-family:'DM Serif Display',serif;font-weight:700;
+  line-height:1;margin-top:4px;
+}
+.auth-title {
+  font-family:'DM Serif Display',serif;font-size:26px;font-weight:700;
+  color:var(--brand-dark);margin-bottom:2px;
+}
+.auth-subtitle {font-size:12px;color:var(--ink-soft);letter-spacing:.5px;}
+
+.auth-tabs {
+  display:flex;gap:0;border-bottom:2px solid var(--border);
+  margin-bottom:24px;
+}
+.auth-tab {
+  flex:1;padding:10px;text-align:center;font-size:13px;font-weight:600;
+  color:var(--ink-soft);cursor:pointer;border-bottom:2px solid transparent;
+  margin-bottom:-2px;transition:all .2s;
+}
+.auth-tab.active{color:var(--brand);border-bottom-color:var(--brand);}
+
+.auth-form{display:flex;flex-direction:column;gap:12px;}
+.auth-label{font-size:11px;font-weight:700;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:4px;}
+.auth-input {
+  width:100%;padding:11px 14px;border:1.5px solid var(--border);
+  border-radius:10px;font-family:'Inter',sans-serif;font-size:14px;
+  color:var(--ink);background:var(--surface);transition:all .2s;
+}
+.auth-input:focus{outline:none;border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(61,107,87,.1);}
+
+.btn-auth-primary {
+  width:100%;padding:13px;border-radius:10px;border:none;
+  background:var(--brand);color:#fff;font-family:'Inter',sans-serif;
+  font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:4px;
+}
+.btn-auth-primary:hover{background:var(--brand-dark);}
+
+.auth-divider {
+  display:flex;align-items:center;gap:12px;margin:4px 0;
+}
+.auth-divider-line{flex:1;height:1px;background:var(--border);}
+.auth-divider-txt{font-size:12px;color:var(--ink-soft);}
+
+.btn-google {
+  width:100%;padding:11px;border-radius:10px;
+  border:1.5px solid var(--border);background:#fff;
+  font-family:'Inter',sans-serif;font-size:14px;font-weight:600;
+  color:var(--ink);cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.btn-google:hover{background:var(--surface);border-color:var(--brand-mid);}
+.google-icon{width:20px;height:20px;}
+
+.auth-error{
+  background:var(--danger-lt);border:1px solid var(--danger);
+  border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--danger);
+  display:none;
+}
+.auth-forgot{
+  text-align:center;font-size:12px;color:var(--brand);
+  cursor:pointer;text-decoration:underline;margin-top:4px;
+}
+
+/* ════ TRIAL BADGE ════ */
+.trial-badge {
+  display:flex;align-items:center;gap:8px;
+  background:linear-gradient(135deg,var(--brand-dark),var(--brand));
+  color:#fff;border-radius:10px;padding:10px 14px;margin-bottom:20px;
+  font-size:12px;
+}
+.trial-badge-icon{font-size:18px;flex-shrink:0;}
+.trial-badge b{font-weight:700;color:var(--gold-lt);}
+
+/* ════ TRIAL EXPIRED SCREEN ════ */
+#trial-screen {
+  display:none;align-items:center;justify-content:center;
+  min-height:100vh;background:linear-gradient(135deg,var(--brand-dark),var(--brand));
+  padding:20px;
+}
+.trial-card {
+  background:#fff;border-radius:20px;padding:40px 32px;
+  width:100%;max-width:440px;text-align:center;
+  box-shadow:0 24px 64px rgba(0,0,0,.25);
+}
+.trial-icon{font-size:48px;margin-bottom:16px;}
+.trial-title{font-family:'DM Serif Display',serif;font-size:24px;color:var(--brand-dark);margin-bottom:8px;}
+.trial-desc{font-size:14px;color:var(--ink-mid);line-height:1.6;margin-bottom:24px;}
+.trial-price-box{
+  background:var(--brand-dark);border-radius:14px;padding:20px;margin-bottom:20px;
+}
+.trial-price-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--brand-mid);margin-bottom:8px;}
+.trial-price-main{font-family:'DM Serif Display',serif;font-size:28px;color:var(--gold-lt);margin-bottom:4px;}
+.trial-price-sub{font-size:12px;color:var(--brand-mid);}
+.btn-trial-cta{
+  width:100%;padding:14px;border-radius:10px;border:none;
+  background:var(--brand);color:#fff;font-size:14px;font-weight:700;
+  cursor:pointer;margin-bottom:12px;
+}
+.btn-trial-logout{
+  background:none;border:none;font-size:13px;color:var(--ink-soft);
+  cursor:pointer;text-decoration:underline;
+}
+
+/* ════ APP SCREEN ════ */
+#app-screen{display:none;flex-direction:column;min-height:100vh;}
+
+/* HEADER */
+.app-header{
+  background:var(--brand-dark);color:#fff;padding:12px 18px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:300;box-shadow:0 2px 16px rgba(0,0,0,.2);
+}
+.header-brand{display:flex;align-items:center;gap:10px;}
+.header-logo{
+  width:34px;height:34px;border-radius:10px;
+  background:var(--brand);display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-family:'DM Serif Display',serif;font-weight:700;color:#fff;
+}
+.header-title{font-family:'DM Serif Display',serif;font-size:18px;font-weight:700;}
+.header-sub{font-size:9px;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase;}
+.header-right{display:flex;align-items:center;gap:8px;}
+.header-date{font-size:11px;color:rgba(255,255,255,.6);text-align:right;}
+.btn-gcal{
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+  color:#fff;border-radius:8px;padding:5px 10px;font-size:10px;font-weight:600;
+  cursor:pointer;display:flex;align-items:center;gap:4px;transition:background .2s;
+  white-space:nowrap;
+}
+.btn-gcal:hover{background:rgba(255,255,255,.2);}
+.btn-logout{
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);
+  color:rgba(255,255,255,.8);border-radius:8px;padding:5px 9px;
+  font-size:10px;cursor:pointer;transition:background .2s;
+}
+.btn-logout:hover{background:rgba(255,255,255,.2);}
+
+/* TRIAL BAR */
+.trial-bar{
+  background:linear-gradient(90deg,var(--warn),#E8930A);
+  color:#fff;padding:7px 18px;display:flex;align-items:center;
+  justify-content:space-between;font-size:12px;font-weight:600;
+}
+.trial-bar-cta{
+  background:rgba(255,255,255,.25);border:none;color:#fff;
+  border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;
+}
+
+/* NAV */
+.app-nav{
+  background:var(--card);border-bottom:1px solid var(--border);
+  display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;position:sticky;top:61px;z-index:200;
+}
+.app-nav::-webkit-scrollbar{display:none;}
+.nav-tab{
+  flex-shrink:0;padding:12px 16px;font-size:12px;font-weight:600;
+  color:var(--ink-mid);cursor:pointer;border-bottom:3px solid transparent;
+  transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:5px;
+}
+.nav-tab.active{color:var(--brand);border-bottom-color:var(--brand);background:var(--brand-light);}
+.nav-tab:hover:not(.active){background:var(--surface);}
+
+/* MAIN */
+.app-main{padding:16px;max-width:860px;margin:0 auto;flex:1;}
+.section{display:none;}.section.active{display:block;}
+
+/* SEÇÃO HEADER */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.sec-title{font-family:'DM Serif Display',serif;font-size:21px;font-weight:700;}
+.sec-sub{font-size:11px;color:var(--ink-soft);margin-top:2px;}
+
+/* CARDS */
+.card{background:var(--card);border-radius:14px;border:1px solid var(--border);padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.05);}
+.card-title{font-family:'DM Serif Display',serif;font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+.card-green{background:#EBF4EF;border-color:var(--brand-mid);}
+.card-dark{background:var(--brand-dark);border:none;}
+.card-rose{background:#FBF0EB;border-color:var(--accent);}
+.card-cream{background:#FAF7F2;border:0.5px solid var(--gold);}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px;}
+.kpi{background:var(--card);border-radius:12px;padding:14px;border:1px solid var(--border);text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.05);}
+.kpi-num{font-family:'DM Serif Display',serif;font-size:28px;color:var(--brand);line-height:1;}
+.kpi-label{font-size:10px;color:var(--ink-soft);margin-top:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:600;}
+
+/* SALDO HERO */
+.saldo-hero{
+  background:linear-gradient(135deg,var(--brand-dark),var(--brand));
+  border-radius:16px;padding:20px;color:#fff;margin-bottom:12px;position:relative;overflow:hidden;
+}
+.saldo-hero::before{content:'';position:absolute;right:-30px;top:-30px;width:120px;height:120px;background:rgba(255,255,255,.06);border-radius:50%;}
+.sh-label{font-size:10px;opacity:.65;text-transform:uppercase;letter-spacing:1px;}
+.sh-value{font-family:'DM Serif Display',serif;font-size:36px;font-weight:700;margin:3px 0 12px;}
+.sh-row{display:flex;gap:20px;}
+.sh-mini .sh-mini-label{font-size:9px;opacity:.6;text-transform:uppercase;letter-spacing:.7px;}
+.sh-mini .sh-mini-val{font-size:16px;font-weight:700;margin-top:2px;}
+
+/* ALERTS */
+.alert{padding:11px 13px;border-radius:10px;margin-bottom:9px;display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.5;border-left:4px solid;}
+.alert-ok{background:var(--success-lt);border-color:var(--success);color:#1A5C35;}
+.alert-warn{background:var(--warn-lt);border-color:var(--warn);color:#7A4E00;}
+.alert-danger{background:var(--danger-lt);border-color:var(--danger);color:#7A1A1A;}
+.alert-info{background:var(--info-lt);border-color:var(--info);color:#1A4A7A;}
+
+/* FORMS */
+.form-group{margin-bottom:11px;}
+.form-label{font-size:10px;font-weight:700;color:var(--ink-mid);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.6px;}
+.form-control{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;color:var(--ink);background:var(--surface);transition:all .2s;-webkit-appearance:none;}
+.form-control:focus{outline:none;border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(61,107,87,.1);}
+textarea.form-control{resize:vertical;min-height:72px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+
+/* BUTTONS */
+.btn{padding:9px 16px;border-radius:9px;border:none;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;justify-content:center;gap:5px;}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:var(--brand);color:#fff;}.btn-primary:hover{background:var(--brand-dark);}
+.btn-secondary{background:var(--brand-light);color:var(--brand);}
+.btn-danger{background:var(--danger-lt);color:var(--danger);}
+.btn-wa{background:var(--wa);color:#fff;}.btn-wa:hover{background:#1da851;}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.btn-xs{padding:4px 9px;font-size:11px;}
+.btn-full{width:100%;}
+
+/* CHIPS */
+.chip-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:11px;}
+.chip{padding:5px 13px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--ink-mid);transition:all .15s;white-space:nowrap;}
+.chip.active{background:var(--brand);color:#fff;border-color:var(--brand);}
+
+/* SEARCH */
+.search-wrap{position:relative;margin-bottom:12px;}
+.search-wrap .form-control{padding-left:36px;}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--ink-soft);font-size:14px;pointer-events:none;}
+
+/* PATIENT LIST */
+.patient-list{list-style:none;}
+.patient-item{display:flex;align-items:center;gap:10px;padding:11px;border-radius:12px;cursor:pointer;transition:background .15s;margin-bottom:3px;border:1px solid transparent;}
+.patient-item:hover{background:var(--brand-light);border-color:var(--border);}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:15px;font-weight:700;flex-shrink:0;}
+.patient-name{font-size:14px;font-weight:600;}
+.patient-meta{font-size:11px;color:var(--ink-soft);margin-top:2px;}
+.badge{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;}
+.badge-ativo{background:var(--success-lt);color:var(--success);}
+.badge-inativo{background:#f0f0f0;color:#888;}
+
+/* SLOT */
+.slot-item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);}
+.slot-item:last-child{border-bottom:none;}
+.slot-time{font-size:13px;font-weight:700;color:var(--brand);min-width:44px;}
+.slot-tipo{font-size:10px;padding:2px 7px;border-radius:20px;display:inline-block;margin-top:2px;font-weight:600;}
+.tipo-presencial{background:var(--brand-light);color:var(--brand);}
+.tipo-online{background:var(--info-lt);color:var(--info);}
+.slot-status{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:700;cursor:pointer;}
+.st-confirmado{background:var(--success-lt);color:var(--success);}
+.st-aguardando{background:var(--warn-lt);color:var(--warn);}
+.st-cancelado{background:var(--danger-lt);color:var(--danger);}
+
+/* AG CARD */
+.ag-card{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:13px;margin-bottom:7px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.ag-date-hdr{font-size:10px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.8px;margin:12px 0 7px;display:flex;align-items:center;gap:5px;}
+.ag-date-hdr.today{color:var(--accent);}
+
+/* LANCAMENTO */
+.lanc-item{display:flex;align-items:center;gap:10px;padding:11px;border-radius:10px;margin-bottom:5px;background:var(--card);border:1px solid var(--border);}
+.lanc-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;}
+.lanc-entrada{background:var(--success-lt);color:var(--success);}
+.lanc-saida{background:var(--danger-lt);color:var(--danger);}
+.lanc-desc{font-size:13px;font-weight:600;}
+.lanc-meta{font-size:11px;color:var(--ink-soft);margin-top:2px;}
+.lanc-val{font-size:14px;font-weight:700;white-space:nowrap;}
+.val-entrada{color:var(--success);}
+.val-saida{color:var(--danger);}
+
+/* PAY ROW */
+.pay-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);gap:8px;}
+.pay-row:last-child{border-bottom:none;}
+.pay-name{font-size:13px;font-weight:600;}
+.pay-info{font-size:11px;color:var(--ink-soft);margin-top:2px;}
+.pay-val{font-size:14px;font-weight:700;color:var(--brand);}
+.pay-badge{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;display:block;text-align:center;margin-top:3px;}
+.pb-pago{background:var(--success-lt);color:var(--success);}
+.pb-pendente{background:var(--warn-lt);color:var(--warn);}
+.pb-atrasado{background:var(--danger-lt);color:var(--danger);}
+
+/* PIX */
+.pix-card{background:linear-gradient(135deg,var(--brand-dark),var(--brand));border-radius:14px;padding:18px;color:#fff;margin-bottom:10px;position:relative;overflow:hidden;}
+.pix-card::before{content:'PIX';position:absolute;right:-8px;bottom:-14px;font-size:62px;font-weight:900;opacity:.06;font-family:'DM Serif Display',serif;}
+.pix-type{font-size:9px;letter-spacing:1.2px;text-transform:uppercase;opacity:.7;margin-bottom:3px;}
+.pix-key{font-size:15px;font-weight:700;margin-bottom:5px;word-break:break-all;}
+.pix-name{font-size:11px;opacity:.75;}
+.pix-actions{display:flex;gap:7px;margin-top:12px;flex-wrap:wrap;}
+.btn-pix{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;transition:background .2s;display:flex;align-items:center;gap:4px;}
+.btn-pix:hover{background:rgba(255,255,255,.28);}
+.btn-pix-del{background:rgba(255,100,100,.18);border-color:rgba(255,100,100,.3);}
+
+/* GATEWAY */
+.gw-item{display:flex;align-items:center;gap:11px;padding:13px;background:var(--card);border-radius:12px;border:1px solid var(--border);margin-bottom:9px;}
+.gw-logo{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.gw-name{font-size:13px;font-weight:700;}
+.gw-desc{font-size:11px;color:var(--ink-soft);margin-top:2px;}
+
+/* MSG */
+.msg-tmpl{background:var(--brand-light);border-radius:12px;padding:13px;margin-bottom:11px;position:relative;border-left:3px solid var(--brand);}
+.msg-tmpl-label{font-size:9px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.msg-tmpl-text{font-size:13px;line-height:1.6;color:var(--ink);}
+.btn-copy-msg{position:absolute;top:9px;right:9px;background:var(--brand);color:#fff;border:none;border-radius:7px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;}
+
+/* HIST */
+.hist-item{border-left:3px solid var(--brand);padding:9px 12px;margin-bottom:9px;background:var(--brand-light);border-radius:0 9px 9px 0;}
+.hist-date{font-size:10px;color:var(--ink-soft);font-weight:700;text-transform:uppercase;letter-spacing:.6px;}
+.hist-text{font-size:13px;margin-top:3px;line-height:1.5;}
+
+/* DETAIL TABS */
+.det-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:14px;}
+.det-tab{flex:1;padding:9px;text-align:center;font-size:11px;font-weight:700;color:var(--ink-soft);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;text-transform:uppercase;letter-spacing:.4px;}
+.det-tab.active{color:var(--brand);border-bottom-color:var(--brand);}
+
+/* QR */
+.qr-wrap{background:#fff;padding:18px;border-radius:12px;display:flex;justify-content:center;margin:14px 0;border:1px solid var(--border);}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,25,18,.5);z-index:500;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px);}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--card);border-radius:22px 22px 0 0;padding:20px 17px 36px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;animation:slideUp .26s cubic-bezier(.22,.68,0,1.2);}
+@keyframes slideUp{from{transform:translateY(100%);opacity:.5}to{transform:translateY(0);opacity:1}}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:4px;margin:0 auto 16px;}
+.modal-title{font-family:'DM Serif Display',serif;font-size:19px;font-weight:700;margin-bottom:14px;}
+.modal-close{float:right;background:none;border:none;font-size:19px;cursor:pointer;color:var(--ink-soft);}
+
+/* WA BTN */
+.wa-btn{width:34px;height:34px;background:var(--wa);color:#fff;border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;flex-shrink:0;box-shadow:0 2px 8px rgba(37,211,102,.35);transition:transform .15s;}
+.wa-btn:hover{transform:scale(1.1);}
+
+/* INFO BOX */
+.info-box{font-size:13px;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;min-height:38px;color:var(--ink);word-break:break-word;}
+
+/* RADIO TIPO */
+.radio-group{display:flex;gap:8px;}
+.radio-opt{flex:1;display:flex;align-items:center;gap:7px;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;}
+.radio-opt.sel-entrada{border-color:var(--success);background:var(--success-lt);color:var(--success);}
+.radio-opt.sel-saida{border-color:var(--danger);background:var(--danger-lt);color:var(--danger);}
+.radio-opt input{display:none;}
+
+/* GCAL TIP */
+.gcal-tip{background:var(--info-lt);border:1px solid #C0D8F0;border-radius:10px;padding:12px;margin-bottom:12px;display:flex;align-items:flex-start;gap:9px;font-size:12.5px;color:var(--info);line-height:1.5;}
+
+.divider{height:1px;background:var(--border);margin:12px 0;}
+.empty-state{text-align:center;padding:36px 16px;color:var(--ink-soft);}
+.empty-state .ei{font-size:34px;margin-bottom:9px;}
+.empty-state p{font-size:13px;line-height:1.7;}
+.fab{position:fixed;bottom:20px;right:16px;width:52px;height:52px;background:var(--brand);color:#fff;border-radius:50%;border:none;font-size:22px;cursor:pointer;z-index:400;box-shadow:0 4px 18px rgba(61,107,87,.45);display:flex;align-items:center;justify-content:center;transition:transform .15s;}
+.fab:hover{transform:scale(1.07);}
+
+/* LOADING */
+.loading-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:999;display:flex;align-items:center;justify-content:center;display:none;}
+.loading-spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- ════ LOADING ════ -->
+<div class="loading-overlay" id="loading">
+  <div class="loading-spinner"></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     TELA DE LOGIN
+════════════════════════════════════════════════════════ -->
+<div id="auth-screen">
+  <div class="auth-card">
+
+    <div class="auth-logo">
+      <div class="auth-psi">
+        <div class="auth-psi-symbol">ψ</div>
+      </div>
+      <div class="auth-title">PsiCare</div>
+      <div class="auth-subtitle">Gestão do Consultório</div>
+    </div>
+
+    <div class="trial-badge">
+      <div class="trial-badge-icon">🌿</div>
+      <div>Experimente <b>15 dias grátis</b> — sem cartão, sem compromisso</div>
+    </div>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="authTab('login',this)">Entrar</div>
+      <div class="auth-tab" onclick="authTab('register',this)">Criar conta</div>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="tab-login">
+      <div class="auth-form">
+        <div>
+          <label class="auth-label">E-mail</label>
+          <input class="auth-input" type="email" id="login-email" placeholder="seu@email.com">
+        </div>
+        <div>
+          <label class="auth-label">Senha</label>
+          <input class="auth-input" type="password" id="login-senha" placeholder="Sua senha">
+        </div>
+        <div class="auth-error" id="login-error"></div>
+        <button class="btn-auth-primary" onclick="fazerLogin()">Entrar no PsiCare</button>
+        <div class="auth-divider">
+          <div class="auth-divider-line"></div>
+          <span class="auth-divider-txt">ou</span>
+          <div class="auth-divider-line"></div>
+        </div>
+        <button class="btn-google" onclick="loginGoogle()">
+          <svg class="google-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Continuar com Google
+        </button>
+        <div class="auth-forgot" onclick="esqueceuSenha()">Esqueci minha senha</div>
+      </div>
+    </div>
+
+    <!-- CADASTRO -->
+    <div id="tab-register" style="display:none;">
+      <div class="auth-form">
+        <div>
+          <label class="auth-label">Nome completo</label>
+          <input class="auth-input" type="text" id="reg-nome" placeholder="Seu nome">
+        </div>
+        <div>
+          <label class="auth-label">E-mail</label>
+          <input class="auth-input" type="email" id="reg-email" placeholder="seu@email.com">
+        </div>
+        <div>
+          <label class="auth-label">Senha</label>
+          <input class="auth-input" type="password" id="reg-senha" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="auth-error" id="reg-error"></div>
+        <button class="btn-auth-primary" onclick="criarConta()">Começar 15 dias grátis</button>
+        <div class="auth-divider">
+          <div class="auth-divider-line"></div>
+          <span class="auth-divider-txt">ou</span>
+          <div class="auth-divider-line"></div>
+        </div>
+        <button class="btn-google" onclick="loginGoogle()">
+          <svg class="google-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Cadastrar com Google
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     TELA DE TRIAL EXPIRADO
+════════════════════════════════════════════════════════ -->
+<div id="trial-screen">
+  <div class="trial-card">
+    <div class="trial-icon">⏱️</div>
+    <div class="trial-title">Período de teste encerrado</div>
+    <div class="trial-desc">
+      Seus 15 dias gratuitos chegaram ao fim. Esperamos que o PsiCare tenha transformado sua rotina!<br><br>
+      Para continuar usando, entre em contato e formalize sua adesão.
+    </div>
+    <div class="trial-price-box">
+      <div class="trial-price-label">Investimento</div>
+      <div class="trial-price-main">Taxa de Adesão: R$ 350,00</div>
+      <div class="trial-price-sub" style="color:var(--gold-lt);margin:6px 0;">+</div>
+      <div class="trial-price-main">12 × R$ 59,90</div>
+      <div class="trial-price-sub">Manutenção e suporte mensal</div>
+    </div>
+    <button class="btn-trial-cta" onclick="waMensagem('','Olá! Gostaria de contratar o PsiCare após meu período de teste. 🌿')">
+      📲 Falar sobre a contratação
+    </button>
+    <br>
+    <button class="btn-trial-logout" onclick="fazerLogout()">Sair da conta</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     APP PRINCIPAL
+════════════════════════════════════════════════════════ -->
+<div id="app-screen">
+
+  <header class="app-header">
+    <div class="header-brand">
+      <div class="header-logo">ψ</div>
+      <div>
+        <div class="header-title">PsiCare</div>
+        <div class="header-sub">Gestão do Consultório</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div>
+        <div class="header-date" id="headerDate"></div>
+        <div class="header-date" id="headerTime" style="font-size:13px;font-weight:700;text-align:right;"></div>
+      </div>
+      <button class="btn-gcal" onclick="window.open('https://calendar.google.com','_blank')">📅 Google Agenda</button>
+      <button class="btn-logout" onclick="fazerLogout()">Sair</button>
+    </div>
+  </header>
+
+  <!-- TRIAL BAR -->
+  <div class="trial-bar" id="trial-bar" style="display:none;">
+    <span id="trial-bar-txt">🕐 Teste gratuito: <b id="trial-days">15</b> dias restantes</span>
+    <button class="trial-bar-cta" onclick="showTrialScreen()">Ver planos</button>
+  </div>
+
+  <nav class="app-nav">
+    <div class="nav-tab active" onclick="showTab('dashboard')" id="tab-dashboard">🏠 Início</div>
+    <div class="nav-tab" onclick="showTab('agenda')" id="tab-agenda">📅 Agenda</div>
+    <div class="nav-tab" onclick="showTab('pacientes')" id="tab-pacientes">👤 Pacientes</div>
+    <div class="nav-tab" onclick="showTab('financeiro')" id="tab-financeiro">💰 Financeiro</div>
+    <div class="nav-tab" onclick="showTab('caixa')" id="tab-caixa">📊 Caixa</div>
+    <div class="nav-tab" onclick="showTab('recebimentos')" id="tab-recebimentos">💳 Recebimentos</div>
+    <div class="nav-tab" onclick="showTab('mensagens')" id="tab-mensagens">💬 Mensagens</div>
+  </nav>
+
+  <main class="app-main">
+
+    <!-- DASHBOARD -->
+    <div class="section active" id="section-dashboard">
+      <div class="sec-hdr"><div><div class="sec-title" id="dash-greeting">Olá! 🌱</div><div class="sec-sub" id="dash-sub"></div></div></div>
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-num" id="kpi-pac">0</div><div class="kpi-label">Pacientes ativas</div></div>
+        <div class="kpi"><div class="kpi-num" id="kpi-hoje">0</div><div class="kpi-label">Sessões hoje</div></div>
+        <div class="kpi"><div class="kpi-num" id="kpi-pend" style="color:var(--warn)">0</div><div class="kpi-label">Pag. pendentes</div></div>
+        <div class="kpi"><div class="kpi-num" id="kpi-saldo" style="color:var(--success)">R$0</div><div class="kpi-label">Saldo do mês</div></div>
+      </div>
+      <div class="card"><div class="card-title">📅 Sessões de Hoje</div><div id="dash-agenda"><div class="empty-state"><div class="ei">📭</div><p>Nenhuma sessão hoje.</p></div></div></div>
+      <div class="card"><div class="card-title">🔔 Alertas do Dia</div><div id="dash-alertas"><div class="alert alert-ok"><div>✅ Tudo em dia!</div></div></div></div>
+      <div class="gcal-tip"><div style="font-size:18pt;flex-shrink:0;">📅</div><div>Use o botão <b>"Google Agenda"</b> no topo para enviar convites às pacientes — exatamente como você já faz hoje.</div></div>
+    </div>
+
+    <!-- AGENDA -->
+    <div class="section" id="section-agenda">
+      <div class="sec-hdr"><div><div class="sec-title">Agenda</div></div><button class="btn btn-primary btn-sm" onclick="openModal('modal-ag')">+ Agendar</button></div>
+      <div class="chip-row" id="ag-chips">
+        <div class="chip active" onclick="filtroAg('todos',this)">Todos</div>
+        <div class="chip" onclick="filtroAg('presencial',this)">Presencial</div>
+        <div class="chip" onclick="filtroAg('online',this)">Online</div>
+        <div class="chip" onclick="filtroAg('hoje',this)">Hoje</div>
+      </div>
+      <div id="ag-list"><div class="empty-state"><div class="ei">🗓️</div><p>Nenhum agendamento ainda.</p></div></div>
+    </div>
+
+    <!-- PACIENTES -->
+    <div class="section" id="section-pacientes">
+      <div class="sec-hdr"><div><div class="sec-title">Pacientes</div><div class="sec-sub"><span id="pac-count">0</span> cadastradas</div></div><button class="btn btn-primary btn-sm" onclick="openModal('modal-pac')">+ Nova</button></div>
+      <div class="search-wrap"><span class="search-icon">🔍</span><input class="form-control" type="text" placeholder="Buscar pelo nome…" oninput="buscarPac(this.value)"></div>
+      <div class="chip-row">
+        <div class="chip active" onclick="filtroPac('todos',this)">Todas</div>
+        <div class="chip" onclick="filtroPac('ativo',this)">Ativas</div>
+        <div class="chip" onclick="filtroPac('inativo',this)">Inativas</div>
+      </div>
+      <ul class="patient-list" id="pac-list"><div class="empty-state"><div class="ei">👤</div><p>Nenhuma paciente cadastrada.</p></div></ul>
+    </div>
+
+    <!-- FINANCEIRO -->
+    <div class="section" id="section-financeiro">
+      <div class="sec-hdr"><div class="sec-title">Financeiro</div></div>
+      <div class="card"><div class="card-title">📊 <span id="fin-mes-label"></span></div>
+        <div class="kpi-grid">
+          <div class="kpi"><div class="kpi-num" id="fin-rec" style="color:var(--success)">R$0</div><div class="kpi-label">Recebido</div></div>
+          <div class="kpi"><div class="kpi-num" id="fin-pend" style="color:var(--warn)">R$0</div><div class="kpi-label">Pendente</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">💳 Status por Paciente</div>
+        <div class="chip-row">
+          <div class="chip active" onclick="filtroFin('todos',this)">Todos</div>
+          <div class="chip" onclick="filtroFin('pago',this)">Pagos</div>
+          <div class="chip" onclick="filtroFin('pendente',this)">Pendentes</div>
+          <div class="chip" onclick="filtroFin('atrasado',this)">Atrasados</div>
+        </div>
+        <div id="fin-list"><div class="empty-state"><div class="ei">💰</div><p>Nenhum registro.</p></div></div>
+      </div>
+    </div>
+
+    <!-- CAIXA -->
+    <div class="section" id="section-caixa">
+      <div class="sec-hdr"><div><div class="sec-title">Caixa Diário</div></div><button class="btn btn-primary btn-sm" onclick="openModal('modal-lanc')">+ Lançar</button></div>
+      <div class="saldo-hero">
+        <div class="sh-label">Saldo do Mês</div>
+        <div class="sh-value" id="sh-saldo">R$ 0,00</div>
+        <div class="sh-row">
+          <div class="sh-mini"><div class="sh-mini-label">↑ Entradas</div><div class="sh-mini-val" id="sh-ent">R$ 0,00</div></div>
+          <div class="sh-mini"><div class="sh-mini-label">↓ Saídas</div><div class="sh-mini-val" id="sh-sai">R$ 0,00</div></div>
+        </div>
+      </div>
+      <div class="card" style="padding:12px;"><canvas id="caixa-chart" height="140"></canvas></div>
+      <div class="chip-row" id="caixa-chips">
+        <div class="chip active" onclick="filtroCaixa('todos',this)">Todos</div>
+        <div class="chip" onclick="filtroCaixa('entrada',this)">Entradas</div>
+        <div class="chip" onclick="filtroCaixa('saida',this)">Saídas</div>
+      </div>
+      <div id="caixa-list"><div class="empty-state"><div class="ei">📊</div><p>Nenhum lançamento ainda.</p></div></div>
+    </div>
+
+    <!-- RECEBIMENTOS -->
+    <div class="section" id="section-recebimentos">
+      <div class="sec-hdr"><div class="sec-title">Recebimentos</div></div>
+      <div class="chip-row">
+        <div class="chip active" onclick="recTab('pix',this)">💚 Pix</div>
+        <div class="chip" onclick="recTab('gw',this)">🔗 Links de Pagamento</div>
+      </div>
+      <div id="rec-pix">
+        <button class="btn btn-primary btn-sm" style="margin-bottom:12px;" onclick="openModal('modal-pix')">+ Cadastrar Chave Pix</button>
+        <div id="pix-list"><div class="empty-state"><div class="ei">💳</div><p>Nenhuma chave Pix cadastrada.</p></div></div>
+      </div>
+      <div id="rec-gw" style="display:none;">
+        <p style="font-size:13px;color:var(--ink-soft);margin-bottom:12px;">Acesse o gateway para gerar o link e envie pelo WhatsApp.</p>
+        <div class="gw-item"><div class="gw-logo" style="background:#e8f5ff;">💙</div><div style="flex:1"><div class="gw-name">Mercado Pago</div><div class="gw-desc">Pix, cartão de crédito e débito</div></div><button class="btn btn-secondary btn-sm" onclick="window.open('https://www.mercadopago.com.br','_blank')">Acessar</button></div>
+        <div class="gw-item"><div class="gw-logo" style="background:#e8fff0;">💚</div><div style="flex:1"><div class="gw-name">PagSeguro</div><div class="gw-desc">Link de pagamento e QR Code</div></div><button class="btn btn-secondary btn-sm" onclick="window.open('https://pagseguro.uol.com.br','_blank')">Acessar</button></div>
+        <div class="divider"></div>
+        <div class="card">
+          <div class="card-title">📲 Enviar Link pelo WhatsApp</div>
+          <div class="form-group"><label class="form-label">Paciente</label><select class="form-control" id="gw-pac"><option value="">Selecionar...</option></select></div>
+          <div class="form-group"><label class="form-label">Link de pagamento</label><input class="form-control" type="url" id="gw-link" placeholder="https://mpago.la/..."></div>
+          <div class="form-group"><label class="form-label">Valor (R$)</label><input class="form-control" type="number" id="gw-valor" placeholder="0,00"></div>
+          <button class="btn btn-wa btn-full" onclick="enviarLinkPag()">📲 Enviar pelo WhatsApp</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MENSAGENS -->
+    <div class="section" id="section-mensagens">
+      <div class="sec-hdr"><div><div class="sec-title">Mensagens</div><div class="sec-sub">Templates prontos para o WhatsApp</div></div></div>
+      <div class="msg-tmpl"><div class="msg-tmpl-label">✅ Confirmação de Consulta</div><button class="btn-copy-msg" onclick="copiarMsg(this)">Copiar</button><div class="msg-tmpl-text">Olá, [Nome]! 😊 Confirmando sua consulta amanhã às [Horário]. Qualquer dúvida estou à disposição. Até lá! 🌿</div></div>
+      <div class="msg-tmpl"><div class="msg-tmpl-label">🔔 Lembrete de Pagamento — Dia 20</div><button class="btn-copy-msg" onclick="copiarMsg(this)">Copiar</button><div class="msg-tmpl-text">Olá, [Nome]! Lembrando que o pagamento deste mês vence amanhã, dia 20. Qualquer dúvida é só me chamar. Obrigada! 💚</div></div>
+      <div class="msg-tmpl"><div class="msg-tmpl-label">⚠️ Pagamento em Atraso</div><button class="btn-copy-msg" onclick="copiarMsg(this)">Copiar</button><div class="msg-tmpl-text">Olá, [Nome]! Notei que o pagamento deste mês ainda não foi confirmado. Poderia me dar um retorno? Fico no aguardo. Obrigada! 🙏</div></div>
+      <div class="msg-tmpl"><div class="msg-tmpl-label">📅 Cancelamento / Reagendamento</div><button class="btn-copy-msg" onclick="copiarMsg(this)">Copiar</button><div class="msg-tmpl-text">Olá, [Nome]! A consulta de [Data] às [Horário] precisará ser remarcada. Qual seria o melhor horário para você? 😊</div></div>
+      <div class="msg-tmpl"><div class="msg-tmpl-label">🌟 Boas-vindas — Novo Paciente</div><button class="btn-copy-msg" onclick="copiarMsg(this)">Copiar</button><div class="msg-tmpl-text">Olá, [Nome]! Seja muito bem-vindo(a)! 🌿 Sou a secretária do consultório. Para agendar sua primeira consulta, podemos verificar os horários — presencial ou online. Qual prefere?</div></div>
+      <div class="msg-tmpl"><div class="msg-tmpl-label">🧾 Recibo para Imposto de Renda</div><button class="btn-copy-msg" onclick="copiarMsg(this)">Copiar</button><div class="msg-tmpl-text">Olá, [Nome]! O recibo de saúde de [Ano] está disponível. Por favor me informe seu CPF para enviá-lo corretamente. 📄</div></div>
+      <div class="divider"></div>
+      <div class="card">
+        <div class="card-title">📲 Envio Direto por Paciente</div>
+        <div class="form-group"><label class="form-label">Paciente</label><select class="form-control" id="msg-pac-sel"><option value="">Selecionar...</option></select></div>
+        <div class="form-group"><label class="form-label">Mensagem</label><textarea class="form-control" id="msg-texto" rows="3" placeholder="Digite ou cole um template aqui..."></textarea></div>
+        <button class="btn btn-wa btn-full" onclick="enviarWA()">📲 Abrir no WhatsApp</button>
+      </div>
+    </div>
+
+  </main>
+  <button class="fab" onclick="fabAction()">＋</button>
+</div>
+
+<!-- ════ MODAIS ════ -->
+
+<!-- NOVA PACIENTE -->
+<div class="modal-overlay" id="modal-pac">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <button class="modal-close" onclick="closeModal('modal-pac')">✕</button>
+  <div class="modal-title">Nova Paciente</div>
+  <div class="form-group"><label class="form-label">Nome completo *</label><input class="form-control" type="text" id="np-nome" placeholder="Nome da paciente"></div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">WhatsApp *</label><input class="form-control" type="tel" id="np-tel" placeholder="(11) 99999-9999"></div>
+    <div class="form-group"><label class="form-label">Nascimento</label><input class="form-control" type="date" id="np-nasc"></div>
+  </div>
+  <div class="form-group"><label class="form-label">E-mail</label><input class="form-control" type="email" id="np-email" placeholder="email@exemplo.com"></div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Atendimento</label><select class="form-control" id="np-tipo"><option value="presencial">Presencial</option><option value="online">Online</option><option value="ambos">Ambos</option></select></div>
+    <div class="form-group"><label class="form-label">Pagamento</label><select class="form-control" id="np-pagdia"><option value="20">Todo dia 20</option><option value="sessao">Por sessão</option><option value="outro">Outra data</option></select></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Valor sessão (R$)</label><input class="form-control" type="number" id="np-valor" placeholder="0,00"></div>
+    <div class="form-group"><label class="form-label">Como chegou?</label><select class="form-control" id="np-origem"><option value="indicacao">Indicação</option><option value="instagram">Instagram</option><option value="google">Google</option><option value="outro">Outro</option></select></div>
+  </div>
+  <div class="form-group"><label class="form-label">Observações</label><textarea class="form-control" id="np-obs" placeholder="Notas relevantes..."></textarea></div>
+  <button class="btn btn-primary btn-full" onclick="salvarPaciente()">💾 Salvar Paciente</button>
+</div>
+</div>
+
+<!-- NOVO AGENDAMENTO -->
+<div class="modal-overlay" id="modal-ag">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <button class="modal-close" onclick="closeModal('modal-ag')">✕</button>
+  <div class="modal-title">Novo Agendamento</div>
+  <div class="form-group"><label class="form-label">Paciente *</label><select class="form-control" id="ag-pac"><option value="">Selecionar...</option></select></div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Data *</label><input class="form-control" type="date" id="ag-data"></div>
+    <div class="form-group"><label class="form-label">Horário *</label><input class="form-control" type="time" id="ag-hora"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Modalidade</label><select class="form-control" id="ag-tipo"><option value="presencial">Presencial</option><option value="online">Online</option></select></div>
+    <div class="form-group"><label class="form-label">Status</label><select class="form-control" id="ag-status"><option value="confirmado">Confirmado</option><option value="aguardando">Aguardando</option></select></div>
+  </div>
+  <div class="form-group"><label class="form-label">Observação</label><textarea class="form-control" id="ag-obs" placeholder="Notas..."></textarea></div>
+  <button class="btn btn-primary btn-full" onclick="salvarAgendamento()">💾 Salvar</button>
+</div>
+</div>
+
+<!-- LANÇAMENTO -->
+<div class="modal-overlay" id="modal-lanc">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <button class="modal-close" onclick="closeModal('modal-lanc')">✕</button>
+  <div class="modal-title">Novo Lançamento</div>
+  <div class="form-group"><label class="form-label">Tipo *</label>
+    <div class="radio-group">
+      <label class="radio-opt" id="opt-ent" onclick="selTipo('entrada')"><input type="radio" name="lanc-tipo" value="entrada" checked> ↑ Entrada</label>
+      <label class="radio-opt" id="opt-sai" onclick="selTipo('saida')"><input type="radio" name="lanc-tipo" value="saida"> ↓ Saída</label>
+    </div>
+  </div>
+  <div class="form-group"><label class="form-label">Descrição *</label><input class="form-control" type="text" id="lanc-desc" placeholder="Ex: Sessão Ana Lima, Aluguel..."></div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Valor (R$) *</label><input class="form-control" type="number" id="lanc-val" placeholder="0,00"></div>
+    <div class="form-group"><label class="form-label">Data *</label><input class="form-control" type="date" id="lanc-data"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Categoria</label>
+      <select class="form-control" id="lanc-cat">
+        <option value="sessao">Sessão</option><option value="plano">Plano de saúde</option>
+        <option value="aluguel">Aluguel</option><option value="material">Material</option>
+        <option value="curso">Curso / Supervisão</option><option value="marketing">Marketing</option>
+        <option value="impostos">Impostos</option><option value="outro">Outro</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Forma</label>
+      <select class="form-control" id="lanc-forma">
+        <option value="pix">Pix</option><option value="dinheiro">Dinheiro</option>
+        <option value="cartao">Cartão</option><option value="transferencia">Transferência</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group"><label class="form-label">Paciente (opcional)</label><select class="form-control" id="lanc-pac"><option value="">Nenhum</option></select></div>
+  <button class="btn btn-primary btn-full" onclick="salvarLancamento()">💾 Salvar</button>
+</div>
+</div>
+
+<!-- PIX -->
+<div class="modal-overlay" id="modal-pix">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <button class="modal-close" onclick="closeModal('modal-pix')">✕</button>
+  <div class="modal-title">Cadastrar Chave Pix</div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Tipo</label><select class="form-control" id="pix-tipo"><option value="cpf">CPF</option><option value="cnpj">CNPJ</option><option value="email">E-mail</option><option value="telefone">Telefone</option><option value="aleatoria">Aleatória</option></select></div>
+    <div class="form-group"><label class="form-label">Banco</label><input class="form-control" type="text" id="pix-banco" placeholder="Nubank, Itaú..."></div>
+  </div>
+  <div class="form-group"><label class="form-label">Chave Pix *</label><input class="form-control" type="text" id="pix-chave" placeholder="Digite a chave..."></div>
+  <div class="form-group"><label class="form-label">Nome do titular</label><input class="form-control" type="text" id="pix-nome" placeholder="Nome que aparece no recebimento"></div>
+  <button class="btn btn-primary btn-full" onclick="salvarPix()">💾 Salvar</button>
+</div>
+</div>
+
+<!-- QR CODE -->
+<div class="modal-overlay" id="modal-qr">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <button class="modal-close" onclick="closeModal('modal-qr')">✕</button>
+  <div class="modal-title" id="qr-title">QR Code Pix</div>
+  <div class="qr-wrap"><div id="qr-container"></div></div>
+  <p style="text-align:center;font-size:13px;color:var(--ink-soft);margin-bottom:12px;" id="qr-chave-txt"></p>
+  <button class="btn btn-secondary btn-full" onclick="copiarChavePix()">📋 Copiar Chave</button>
+</div>
+</div>
+
+<!-- DETALHE PACIENTE -->
+<div class="modal-overlay" id="modal-det">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <button class="modal-close" onclick="closeModal('modal-det')">✕</button>
+  <div style="display:flex;align-items:center;gap:11px;margin-bottom:14px;">
+    <div class="avatar" id="det-av" style="width:48px;height:48px;font-size:17px;">?</div>
+    <div style="flex:1;"><div style="font-family:'DM Serif Display',serif;font-size:17px;font-weight:700;" id="det-nome">—</div><div style="font-size:11px;color:var(--ink-soft);" id="det-meta">—</div></div>
+    <button class="wa-btn" onclick="waRapido()">📲</button>
+  </div>
+  <div class="det-tabs">
+    <div class="det-tab active" onclick="detTab('info',this)">Dados</div>
+    <div class="det-tab" onclick="detTab('historico',this)">Histórico</div>
+    <div class="det-tab" onclick="detTab('financeiro',this)">Financeiro</div>
+    <div class="det-tab" onclick="detTab('agenda',this)">Agenda</div>
+  </div>
+  <div id="det-info">
+    <div class="form-row"><div class="form-group"><label class="form-label">WhatsApp</label><div class="info-box" id="det-tel">—</div></div><div class="form-group"><label class="form-label">E-mail</label><div class="info-box" id="det-email">—</div></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Atendimento</label><div class="info-box" id="det-tipo">—</div></div><div class="form-group"><label class="form-label">Pagamento</label><div class="info-box" id="det-pagdia">—</div></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Valor sessão</label><div class="info-box" id="det-valor">—</div></div><div class="form-group"><label class="form-label">Origem</label><div class="info-box" id="det-origem">—</div></div></div>
+    <div class="form-group"><label class="form-label">Observações</label><div class="info-box" id="det-obs" style="min-height:52px;">—</div></div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="agendarPac()">📅 Agendar</button>
+      <button class="btn btn-wa btn-sm" onclick="waRapido()">📲 WhatsApp</button>
+      <button class="btn btn-danger btn-sm" onclick="excluirPac()">🗑 Excluir</button>
+    </div>
+  </div>
+  <div id="det-historico" style="display:none;">
+    <div class="form-group"><label class="form-label">Nova anotação</label><textarea class="form-control" id="hist-txt" placeholder="Resumo da sessão, evolução..."></textarea></div>
+    <button class="btn btn-primary btn-sm" onclick="salvarHistorico()" style="margin-bottom:12px;">+ Salvar</button>
+    <div class="divider"></div>
+    <div id="hist-list"><div class="empty-state"><div class="ei">📝</div><p>Nenhuma anotação.</p></div></div>
+  </div>
+  <div id="det-financeiro" style="display:none;">
+    <div class="form-row"><div class="form-group"><label class="form-label">Data do pagamento</label><input class="form-control" type="date" id="fp-data"></div><div class="form-group"><label class="form-label">Valor (R$)</label><input class="form-control" type="number" id="fp-val" placeholder="0,00"></div></div>
+    <button class="btn btn-primary btn-sm btn-full" onclick="salvarPagamento()" style="margin-bottom:12px;">+ Registrar Pagamento</button>
+    <div id="fp-list"><div class="empty-state"><div class="ei">💸</div><p>Nenhum pagamento.</p></div></div>
+  </div>
+  <div id="det-agenda" style="display:none;">
+    <div id="det-ag-list"><div class="empty-state"><div class="ei">🗓️</div><p>Nenhuma sessão.</p></div></div>
+    <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="agendarPac()">+ Nova Sessão</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// EDITAR AQUI: Configuração do Firebase
+// Substitua pelos valores do SEU projeto
+// ════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyBMVs2JfOS6sK9uFilR07SqnudXAG7yzzc",
+  authDomain: "psicare-8ace5.firebaseapp.com",
+  projectId: "psicare-8ace5",
+  storageBucket: "psicare-8ace5.firebasestorage.app",
+  messagingSenderId: "493556416542",
+  appId: "1:493556416542:web:bcf51ec21362b2ea20ae0f"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+// ════════════════════════════════════════════════════════
+// TRIAL — 15 dias
+// ════════════════════════════════════════════════════════
+const TRIAL_DAYS = 15;
+
+function trialDaysLeft(createdAt) {
+  const created = new Date(createdAt);
+  const now     = new Date();
+  const diff    = Math.floor((now - created) / (1000*60*60*24));
+  return Math.max(0, TRIAL_DAYS - diff);
+}
+
+function checkTrial(userData) {
+  // Se usuário tem flag de pago, libera
+  if (userData.paid) return true;
+  const left = trialDaysLeft(userData.createdAt);
+  if (left <= 0) {
+    showTrialScreen();
+    return false;
+  }
+  // Mostra barra de trial
+  document.getElementById('trial-bar').style.display = 'flex';
+  document.getElementById('trial-days').textContent  = left;
+  return true;
+}
+
+function showTrialScreen() {
+  document.getElementById('app-screen').style.display   = 'none';
+  document.getElementById('auth-screen').style.display  = 'none';
+  document.getElementById('trial-screen').style.display = 'flex';
+}
+
+// ════════════════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════════════════
+let currentUser = null;
+let userRef     = null;
+
+function showLoading(v) {
+  document.getElementById('loading').style.display = v ? 'flex' : 'none';
+}
+
+auth.onAuthStateChanged(async user => {
+  showLoading(true);
+  if (user) {
+    currentUser = user;
+    userRef     = db.collection('users').doc(user.uid);
+    const doc   = await userRef.get();
+    if (!doc.exists) {
+      await userRef.set({
+        nome:      user.displayName || '',
+        email:     user.email,
+        createdAt: new Date().toISOString(),
+        paid:      false
+      });
+    }
+    const userData = (await userRef.get()).data();
+    if (checkTrial(userData)) {
+      showApp();
+    }
+  } else {
+    document.getElementById('auth-screen').style.display  = 'flex';
+    document.getElementById('app-screen').style.display   = 'none';
+    document.getElementById('trial-screen').style.display = 'none';
+  }
+  showLoading(false);
+});
+
+function showApp() {
+  document.getElementById('auth-screen').style.display  = 'none';
+  document.getElementById('trial-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display   = 'flex';
+  renderDashboard();
+  loadData();
+}
+
+function authTab(tab, el) {
+  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-login').style.display    = tab==='login'   ? '' : 'none';
+  document.getElementById('tab-register').style.display = tab==='register' ? '' : 'none';
+}
+
+async function fazerLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const senha = document.getElementById('login-senha').value;
+  const err   = document.getElementById('login-error');
+  try {
+    showLoading(true);
+    await auth.signInWithEmailAndPassword(email, senha);
+    err.style.display = 'none';
+  } catch(e) {
+    err.textContent   = 'E-mail ou senha incorretos.';
+    err.style.display = 'block';
+    showLoading(false);
+  }
+}
+
+async function criarConta() {
+  const nome  = document.getElementById('reg-nome').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const senha = document.getElementById('reg-senha').value;
+  const err   = document.getElementById('reg-error');
+  if (!nome||!email||!senha) { err.textContent='Preencha todos os campos.';err.style.display='block';return; }
+  if (senha.length<6) { err.textContent='A senha precisa ter ao menos 6 caracteres.';err.style.display='block';return; }
+  try {
+    showLoading(true);
+    const cred = await auth.createUserWithEmailAndPassword(email, senha);
+    await cred.user.updateProfile({displayName: nome});
+    err.style.display = 'none';
+  } catch(e) {
+    err.textContent   = 'Erro ao criar conta. Tente outro e-mail.';
+    err.style.display = 'block';
+    showLoading(false);
+  }
+}
+
+async function loginGoogle() {
+  try {
+    showLoading(true);
+    const provider = new firebase.auth.GoogleAuthProvider();
+    await auth.signInWithPopup(provider);
+  } catch(e) {
+    showLoading(false);
+    alert('Erro ao entrar com Google. Tente novamente.');
+  }
+}
+
+async function esqueceuSenha() {
+  const email = document.getElementById('login-email').value.trim();
+  if (!email) { alert('Digite seu e-mail primeiro.'); return; }
+  try {
+    await auth.sendPasswordResetEmail(email);
+    alert('E-mail de redefinição enviado! Verifique sua caixa de entrada.');
+  } catch(e) { alert('Erro. Verifique o e-mail digitado.'); }
+}
+
+async function fazerLogout() {
+  await auth.signOut();
+}
+
+// ════════════════════════════════════════════════════════
+// FIRESTORE — coleções por usuário
+// ════════════════════════════════════════════════════════
+function col(name)      { return db.collection('users').doc(currentUser.uid).collection(name); }
+function uid()          { return Date.now().toString(36)+Math.random().toString(36).slice(2); }
+const today    = ()  => new Date().toISOString().slice(0,10);
+const mesAtual = ()  => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; };
+const fmtDate  = s   => { if(!s)return'—'; const[y,m,d]=s.split('-'); return`${d}/${m}/${y}`; };
+const fmtMoney = v   => 'R$ '+parseFloat(v||0).toFixed(2).replace('.',',');
+const initials = n   => n.trim().split(/\s+/).slice(0,2).map(w=>w[0].toUpperCase()).join('');
+const ptMes    = ()  => new Date().toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+
+// Cache local (evita leituras desnecessárias)
+let DB = { pacientes:[], agendamentos:[], historicos:{}, pagamentos:{}, lancamentos:[], pixKeys:[] };
+
+async function loadData() {
+  showLoading(true);
+  try {
+    const [pacs,ags,lancs,pixs] = await Promise.all([
+      col('pacientes').orderBy('nome').get(),
+      col('agendamentos').orderBy('data').get(),
+      col('lancamentos').orderBy('data','desc').get(),
+      col('pixKeys').get()
+    ]);
+    DB.pacientes     = pacs.docs.map(d=>({id:d.id,...d.data()}));
+    DB.agendamentos  = ags.docs.map(d=>({id:d.id,...d.data()}));
+    DB.lancamentos   = lancs.docs.map(d=>({id:d.id,...d.data()}));
+    DB.pixKeys       = pixs.docs.map(d=>({id:d.id,...d.data()}));
+    // Históricos e pagamentos por paciente
+    for (const p of DB.pacientes) {
+      const [hs,pgs] = await Promise.all([
+        col('historicos').where('pacienteId','==',p.id).orderBy('data','desc').get(),
+        col('pagamentos').where('pacienteId','==',p.id).orderBy('data','desc').get()
+      ]);
+      DB.historicos[p.id] = hs.docs.map(d=>({id:d.id,...d.data()}));
+      DB.pagamentos[p.id] = pgs.docs.map(d=>({id:d.id,...d.data()}));
+    }
+  } catch(e) { console.error(e); }
+  showLoading(false);
+  renderDashboard();
+  renderPacientes();
+  renderAgenda();
+  renderFinanceiro();
+  renderCaixa();
+  renderRecebimentos();
+}
+
+// ════════════════════════════════════════════════════════
+// TABS & MODALS
+// ════════════════════════════════════════════════════════
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('section-'+id).classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+  if(id==='mensagens') popSelect('msg-pac-sel');
+  if(id==='recebimentos') popSelect('gw-pac');
+}
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  if(id==='modal-ag')   { popSelect('ag-pac');   document.getElementById('ag-data').value=today(); }
+  if(id==='modal-lanc') { popSelect('lanc-pac');  document.getElementById('lanc-data').value=today(); selTipo('entrada'); }
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});});
+function fabAction() {
+  const a=document.querySelector('.section.active').id.replace('section-','');
+  if(a==='pacientes')openModal('modal-pac');
+  else if(a==='caixa')openModal('modal-lanc');
+  else if(a==='recebimentos')openModal('modal-pix');
+  else openModal('modal-ag');
+}
+function popSelect(id) {
+  const s=document.getElementById(id); if(!s)return;
+  const v=s.value;
+  const ph=id==='ag-pac'||id==='msg-pac-sel'||id==='gw-pac'?'Selecionar...':'Nenhum';
+  s.innerHTML=`<option value="">${ph}</option>`+DB.pacientes.map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
+  if(v)s.value=v;
+}
+
+// ════════════════════════════════════════════════════════
+// PACIENTES
+// ════════════════════════════════════════════════════════
+let curPid=null, pfiltro='todos', pbusca='';
+
+async function salvarPaciente() {
+  const nome=document.getElementById('np-nome').value.trim();
+  if(!nome){alert('Informe o nome.');return;}
+  showLoading(true);
+  const p={nome,tel:document.getElementById('np-tel').value.trim(),email:document.getElementById('np-email').value.trim(),nasc:document.getElementById('np-nasc').value,tipo:document.getElementById('np-tipo').value,pagdia:document.getElementById('np-pagdia').value,valor:document.getElementById('np-valor').value,origem:document.getElementById('np-origem').value,obs:document.getElementById('np-obs').value.trim(),status:'ativo',criadoEm:today()};
+  const ref=await col('pacientes').add(p);
+  DB.pacientes.push({id:ref.id,...p});
+  DB.pacientes.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  showLoading(false);
+  closeModal('modal-pac');
+  ['np-nome','np-tel','np-email','np-nasc','np-valor','np-obs'].forEach(i=>document.getElementById(i).value='');
+  renderPacientes(); renderDashboard();
+}
+
+function filtroPac(t,el){pfiltro=t;document.querySelectorAll('#section-pacientes .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderPacientes();}
+function buscarPac(v){pbusca=v.toLowerCase();renderPacientes();}
+
+function renderPacientes(){
+  const list=document.getElementById('pac-list');
+  let ps=DB.pacientes.filter(p=>p.nome.toLowerCase().includes(pbusca)&&(pfiltro==='todos'||p.status===pfiltro));
+  document.getElementById('pac-count').textContent=DB.pacientes.length;
+  if(!ps.length){list.innerHTML='<div class="empty-state"><div class="ei">👤</div><p>Nenhuma paciente encontrada.</p></div>';return;}
+  list.innerHTML=ps.map(p=>`<li class="patient-item" onclick="abrirPaciente('${p.id}')"><div class="avatar">${initials(p.nome)}</div><div style="flex:1;"><div class="patient-name">${p.nome}</div><div class="patient-meta">${p.tel||'Sem tel.'} · ${p.tipo}</div></div><div style="display:flex;align-items:center;gap:5px;"><span class="badge badge-${p.status}">${p.status}</span>${p.tel?`<button class="wa-btn" style="width:28px;height:28px;font-size:12px;" onclick="event.stopPropagation();waMensagem('${p.tel}','Olá ${p.nome}! 😊')">📲</button>`:''}</div></li>`).join('');
+}
+
+function abrirPaciente(id){
+  curPid=id;const p=DB.pacientes.find(x=>x.id===id);if(!p)return;
+  document.getElementById('det-av').textContent=initials(p.nome);
+  document.getElementById('det-nome').textContent=p.nome;
+  document.getElementById('det-meta').textContent=`${p.status.toUpperCase()} · desde ${fmtDate(p.criadoEm)}`;
+  document.getElementById('det-tel').textContent=p.tel||'—';
+  document.getElementById('det-email').textContent=p.email||'—';
+  document.getElementById('det-tipo').textContent=p.tipo||'—';
+  document.getElementById('det-pagdia').textContent=p.pagdia==='20'?'Todo dia 20':p.pagdia==='sessao'?'Por sessão':'Outra data';
+  document.getElementById('det-valor').textContent=p.valor?fmtMoney(p.valor):'—';
+  document.getElementById('det-origem').textContent=p.origem||'—';
+  document.getElementById('det-obs').textContent=p.obs||'—';
+  detTab('info',document.querySelector('.det-tab'));
+  renderHistorico();renderFinPaciente();renderAgPaciente();
+  openModal('modal-det');
+}
+function detTab(tab,el){document.querySelectorAll('.det-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['info','historico','financeiro','agenda'].forEach(t=>document.getElementById('det-'+t).style.display=t===tab?'':'none');}
+async function excluirPac(){if(!confirm('Excluir paciente?'))return;showLoading(true);await col('pacientes').doc(curPid).delete();DB.pacientes=DB.pacientes.filter(x=>x.id!==curPid);showLoading(false);closeModal('modal-det');renderPacientes();renderDashboard();}
+function agendarPac(){closeModal('modal-det');openModal('modal-ag');document.getElementById('ag-pac').value=curPid;}
+function waRapido(){const p=DB.pacientes.find(x=>x.id===curPid);if(!p||!p.tel){alert('Sem WhatsApp.');return;}waMensagem(p.tel,`Olá ${p.nome}! 😊`);}
+
+// ════════════════════════════════════════════════════════
+// HISTÓRICO
+// ════════════════════════════════════════════════════════
+async function salvarHistorico(){const txt=document.getElementById('hist-txt').value.trim();if(!txt)return;showLoading(true);const d={pacienteId:curPid,data:today(),texto:txt};const ref=await col('historicos').add(d);if(!DB.historicos[curPid])DB.historicos[curPid]=[];DB.historicos[curPid].unshift({id:ref.id,...d});showLoading(false);document.getElementById('hist-txt').value='';renderHistorico();}
+function renderHistorico(){const list=document.getElementById('hist-list');const h=DB.historicos[curPid]||[];list.innerHTML=!h.length?'<div class="empty-state"><div class="ei">📝</div><p>Nenhuma anotação.</p></div>':h.map(x=>`<div class="hist-item"><div class="hist-date">📅 ${fmtDate(x.data)}</div><div class="hist-text">${x.texto}</div></div>`).join('');}
+
+// ════════════════════════════════════════════════════════
+// FINANCEIRO PACIENTE
+// ════════════════════════════════════════════════════════
+async function salvarPagamento(){const data=document.getElementById('fp-data').value;const val=document.getElementById('fp-val').value;if(!data||!val){alert('Preencha data e valor.');return;}showLoading(true);const pg={pacienteId:curPid,data,valor:parseFloat(val)};const ref=await col('pagamentos').add(pg);if(!DB.pagamentos[curPid])DB.pagamentos[curPid]=[];DB.pagamentos[curPid].unshift({id:ref.id,...pg});const p=DB.pacientes.find(x=>x.id===curPid);const lanc={tipo:'entrada',desc:`Sessão — ${p?p.nome:'Paciente'}`,valor:parseFloat(val),data,cat:'sessao',forma:'pix',pacienteId:curPid};const lref=await col('lancamentos').add(lanc);DB.lancamentos.unshift({id:lref.id,...lanc});showLoading(false);document.getElementById('fp-data').value='';document.getElementById('fp-val').value='';renderFinPaciente();renderFinanceiro();renderCaixa();renderDashboard();}
+function renderFinPaciente(){const list=document.getElementById('fp-list');const pgs=DB.pagamentos[curPid]||[];list.innerHTML=!pgs.length?'<div class="empty-state"><div class="ei">💸</div><p>Nenhum pagamento.</p></div>':pgs.map(x=>`<div class="pay-row"><div><div class="pay-name">Pagamento</div><div class="pay-info">${fmtDate(x.data)}</div></div><div style="text-align:right"><div class="pay-val">${fmtMoney(x.valor)}</div><span class="pay-badge pb-pago">✅ Pago</span></div></div>`).join('');}
+function renderAgPaciente(){const list=document.getElementById('det-ag-list');const ags=DB.agendamentos.filter(a=>a.pacienteId===curPid).sort((a,b)=>b.data.localeCompare(a.data));list.innerHTML=!ags.length?'<div class="empty-state"><div class="ei">🗓️</div><p>Nenhuma sessão.</p></div>':ags.map(a=>`<div class="ag-card"><div style="display:flex;justify-content:space-between;align-items:center;"><div><b>${fmtDate(a.data)}</b> às <b>${a.hora}</b></div><span class="slot-status st-${a.status}">${fmtStatus(a.status)}</span></div><span class="slot-tipo tipo-${a.tipo}" style="margin-top:5px;display:inline-block;">${a.tipo}</span></div>`).join('');}
+
+// ════════════════════════════════════════════════════════
+// AGENDA
+// ════════════════════════════════════════════════════════
+let agFiltro='todos';
+function filtroAg(t,el){agFiltro=t;document.querySelectorAll('#ag-chips .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderAgenda();}
+async function salvarAgendamento(){const pid=document.getElementById('ag-pac').value;const data=document.getElementById('ag-data').value;const hora=document.getElementById('ag-hora').value;if(!pid||!data||!hora){alert('Preencha paciente, data e horário.');return;}showLoading(true);const ag={pacienteId:pid,data,hora,tipo:document.getElementById('ag-tipo').value,status:document.getElementById('ag-status').value,obs:document.getElementById('ag-obs').value.trim()};const ref=await col('agendamentos').add(ag);DB.agendamentos.push({id:ref.id,...ag});DB.agendamentos.sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));showLoading(false);closeModal('modal-ag');document.getElementById('ag-obs').value='';renderAgenda();renderDashboard();}
+function renderAgenda(){const list=document.getElementById('ag-list');const td=today();let ags=DB.agendamentos.filter(a=>{if(agFiltro==='hoje')return a.data===td;if(agFiltro!=='todos')return a.tipo===agFiltro;return true;});if(!ags.length){list.innerHTML='<div class="empty-state"><div class="ei">🗓️</div><p>Nenhum agendamento.</p></div>';return;}const grouped={};ags.forEach(a=>{if(!grouped[a.data])grouped[a.data]=[];grouped[a.data].push(a);});let html='';Object.keys(grouped).sort().forEach(date=>{const isT=date===td;html+=`<div class="ag-date-hdr ${isT?'today':''}">${isT?'📍 HOJE — ':'📅 '}${fmtDate(date)}</div>`;grouped[date].sort((a,b)=>a.hora.localeCompare(b.hora)).forEach(a=>{const p=DB.pacientes.find(x=>x.id===a.pacienteId);html+=`<div class="ag-card"><div style="display:flex;align-items:center;gap:9px;"><div class="avatar" style="width:34px;height:34px;font-size:12px;">${p?initials(p.nome):'?'}</div><div style="flex:1;"><div style="font-size:13px;font-weight:600;">${p?p.nome:'Removida'}</div><div style="font-size:11px;color:var(--ink-soft);">🕐 ${a.hora} · <span class="slot-tipo tipo-${a.tipo}">${a.tipo}</span></div></div><span class="slot-status st-${a.status}" onclick="toggleStatus('${a.id}')">${fmtStatus(a.status)}</span></div>${a.obs?`<div style="margin-top:7px;font-size:11px;color:var(--ink-soft);padding:7px;background:var(--surface);border-radius:7px;">${a.obs}</div>`:''}<div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap;"><button class="btn btn-danger btn-xs" onclick="excluirAg('${a.id}')">Cancelar</button>${p&&p.tel?`<button class="btn btn-wa btn-xs" onclick="waMensagem('${p.tel}','Olá ${p.nome}! Confirmando sua consulta em ${fmtDate(date)} às ${a.hora}. Confirma? 😊')">📲 Confirmar</button>`:''}</div></div>`;});});list.innerHTML=html;}
+const fmtStatus=s=>s==='confirmado'?'✅ OK':s==='aguardando'?'⏳ Ag.':'❌ Cancel.';
+async function toggleStatus(id){const ag=DB.agendamentos.find(x=>x.id===id);if(!ag)return;const o=['confirmado','aguardando','cancelado'];ag.status=o[(o.indexOf(ag.status)+1)%o.length];await col('agendamentos').doc(id).update({status:ag.status});renderAgenda();renderDashboard();}
+async function excluirAg(id){if(!confirm('Cancelar agendamento?'))return;showLoading(true);await col('agendamentos').doc(id).delete();DB.agendamentos=DB.agendamentos.filter(x=>x.id!==id);showLoading(false);renderAgenda();renderDashboard();}
+
+// ════════════════════════════════════════════════════════
+// FINANCEIRO GERAL
+// ════════════════════════════════════════════════════════
+let finFiltro='todos';
+function filtroFin(t,el){finFiltro=t;document.querySelectorAll('#section-financeiro .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderFinanceiro();}
+function renderFinanceiro(){document.getElementById('fin-mes-label').textContent=ptMes();const mes=mesAtual(),td=today();let rec=0,pend=0;Object.keys(DB.pagamentos).forEach(pid=>DB.pagamentos[pid].forEach(pg=>{if(pg.data&&pg.data.startsWith(mes))rec+=pg.valor;}));DB.pacientes.filter(p=>p.status==='ativo').forEach(p=>{const pgs=DB.pagamentos[p.id]||[];if(!pgs.some(pg=>pg.data&&pg.data.startsWith(mes))&&p.valor)pend+=parseFloat(p.valor);});document.getElementById('fin-rec').textContent=fmtMoney(rec);document.getElementById('fin-pend').textContent=fmtMoney(pend);let rows=DB.pacientes.filter(p=>p.status==='ativo').map(p=>{const pgs=DB.pagamentos[p.id]||[];const pagou=pgs.some(pg=>pg.data&&pg.data.startsWith(mes));const st=pagou?'pago':(p.pagdia==='20'&&td>mes+'-20')?'atrasado':'pendente';return{p,st};});if(finFiltro!=='todos')rows=rows.filter(r=>r.st===finFiltro);const list=document.getElementById('fin-list');if(!rows.length){list.innerHTML='<div class="empty-state"><div class="ei">💰</div><p>Nenhum resultado.</p></div>';return;}list.innerHTML=rows.map(({p,st})=>`<div class="pay-row"><div style="flex:1;"><div class="pay-name">${p.nome}</div><div class="pay-info">${p.pagdia==='20'?'Vence dia 20':p.pagdia==='sessao'?'Por sessão':'Data específica'}</div></div><div style="text-align:right;flex-shrink:0;"><div class="pay-val">${p.valor?fmtMoney(p.valor):'—'}</div><span class="pay-badge pb-${st}">${st==='pago'?'✅ Pago':st==='atrasado'?'⚠️ Atrasado':'⏳ Pendente'}</span>${p.tel&&st!=='pago'?`<br><button class="btn btn-wa btn-xs" style="margin-top:4px;" onclick="waMensagem('${p.tel}','Olá ${p.nome}! ${st==='atrasado'?'Pagamento em atraso.':'Lembrete de pagamento.'} 🙏')">📲</button>`:''}</div></div>`).join('');}
+
+// ════════════════════════════════════════════════════════
+// CAIXA
+// ════════════════════════════════════════════════════════
+let caixaFiltro='todos',chartCaixa=null;
+function selTipo(t){document.getElementById('opt-ent').className='radio-opt'+(t==='entrada'?' sel-entrada':'');document.getElementById('opt-sai').className='radio-opt'+(t==='saida'?' sel-saida':'');document.querySelector(`input[value="${t}"]`).checked=true;}
+function filtroCaixa(t,el){caixaFiltro=t;document.querySelectorAll('#caixa-chips .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderCaixa();}
+async function salvarLancamento(){const tipo=document.querySelector('input[name="lanc-tipo"]:checked').value;const desc=document.getElementById('lanc-desc').value.trim();const val=document.getElementById('lanc-val').value;const data=document.getElementById('lanc-data').value;if(!desc||!val||!data){alert('Preencha todos os campos.');return;}showLoading(true);const l={tipo,desc,valor:parseFloat(val),data,cat:document.getElementById('lanc-cat').value,forma:document.getElementById('lanc-forma').value,pacienteId:document.getElementById('lanc-pac').value||null};const ref=await col('lancamentos').add(l);DB.lancamentos.unshift({id:ref.id,...l});showLoading(false);closeModal('modal-lanc');document.getElementById('lanc-desc').value='';document.getElementById('lanc-val').value='';renderCaixa();renderDashboard();}
+function renderCaixa(){const mes=mesAtual();const mesL=DB.lancamentos.filter(l=>l.data&&l.data.startsWith(mes));const ent=mesL.filter(l=>l.tipo==='entrada').reduce((s,l)=>s+l.valor,0);const sai=mesL.filter(l=>l.tipo==='saida').reduce((s,l)=>s+l.valor,0);document.getElementById('sh-saldo').textContent=fmtMoney(ent-sai);document.getElementById('sh-ent').textContent=fmtMoney(ent);document.getElementById('sh-sai').textContent=fmtMoney(sai);const labels=[],entD=[],saiD=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=d.toISOString().slice(0,10);labels.push(fmtDate(ds).slice(0,5));entD.push(DB.lancamentos.filter(l=>l.data===ds&&l.tipo==='entrada').reduce((s,l)=>s+l.valor,0));saiD.push(DB.lancamentos.filter(l=>l.data===ds&&l.tipo==='saida').reduce((s,l)=>s+l.valor,0));}const ctx=document.getElementById('caixa-chart').getContext('2d');if(chartCaixa)chartCaixa.destroy();chartCaixa=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Entradas',data:entD,backgroundColor:'rgba(42,122,80,.7)',borderRadius:5},{label:'Saídas',data:saiD,backgroundColor:'rgba(184,64,64,.65)',borderRadius:5}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{grid:{color:'#f0f0f0'},ticks:{font:{size:9},callback:v=>'R$'+v}}}}});let lans=[...DB.lancamentos].filter(l=>l.data&&l.data.startsWith(mes));if(caixaFiltro!=='todos')lans=lans.filter(l=>l.tipo===caixaFiltro);const list=document.getElementById('caixa-list');if(!lans.length){list.innerHTML='<div class="empty-state"><div class="ei">📊</div><p>Nenhum lançamento.</p></div>';return;}list.innerHTML=lans.map(l=>`<div class="lanc-item"><div class="lanc-icon lanc-${l.tipo}">${l.tipo==='entrada'?'↑':'↓'}</div><div style="flex:1;"><div class="lanc-desc">${l.desc}</div><div class="lanc-meta">${fmtDate(l.data)} · ${l.cat} · ${l.forma}</div></div><div style="text-align:right;"><div class="lanc-val val-${l.tipo}">${l.tipo==='entrada'?'+':'-'}${fmtMoney(l.valor)}</div><button onclick="excluirLanc('${l.id}')" style="background:none;border:none;color:#ccc;font-size:12px;cursor:pointer;">✕</button></div></div>`).join('');}
+async function excluirLanc(id){await col('lancamentos').doc(id).delete();DB.lancamentos=DB.lancamentos.filter(x=>x.id!==id);renderCaixa();renderDashboard();}
+
+// ════════════════════════════════════════════════════════
+// RECEBIMENTOS / PIX
+// ════════════════════════════════════════════════════════
+function recTab(t,el){document.querySelectorAll('#section-recebimentos .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');document.getElementById('rec-pix').style.display=t==='pix'?'':'none';document.getElementById('rec-gw').style.display=t==='gw'?'':'none';if(t==='gw')popSelect('gw-pac');}
+async function salvarPix(){const chave=document.getElementById('pix-chave').value.trim();if(!chave){alert('Informe a chave.');return;}showLoading(true);const px={tipo:document.getElementById('pix-tipo').value,chave,nome:document.getElementById('pix-nome').value.trim(),banco:document.getElementById('pix-banco').value.trim()};const ref=await col('pixKeys').add(px);DB.pixKeys.push({id:ref.id,...px});showLoading(false);closeModal('modal-pix');['pix-chave','pix-nome','pix-banco'].forEach(i=>document.getElementById(i).value='');renderRecebimentos();}
+let pixChaveAtual='';
+function renderRecebimentos(){const list=document.getElementById('pix-list');if(!DB.pixKeys.length){list.innerHTML='<div class="empty-state"><div class="ei">💳</div><p>Nenhuma chave Pix.</p></div>';return;}list.innerHTML=DB.pixKeys.map(px=>`<div class="pix-card"><div class="pix-type">${px.tipo.toUpperCase()} · ${px.banco||'—'}</div><div class="pix-key">${px.chave}</div><div class="pix-name">👤 ${px.nome||'—'}</div><div class="pix-actions"><button class="btn-pix" onclick="mostrarQR('${px.id}')">📱 QR Code</button><button class="btn-pix" onclick="copiarPix('${px.chave}')">📋 Copiar</button><button class="btn-pix btn-pix-del" onclick="excluirPix('${px.id}')">🗑</button></div></div>`).join('');}
+function mostrarQR(id){const px=DB.pixKeys.find(x=>x.id===id);if(!px)return;pixChaveAtual=px.chave;document.getElementById('qr-title').textContent='QR Code — '+px.tipo.toUpperCase();document.getElementById('qr-chave-txt').textContent=px.chave;document.getElementById('qr-container').innerHTML='';new QRCode(document.getElementById('qr-container'),{text:px.chave,width:200,height:200,colorDark:'#1A2420',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});openModal('modal-qr');}
+function copiarPix(c){navigator.clipboard.writeText(c).then(()=>alert('Chave copiada!'));}
+function copiarChavePix(){navigator.clipboard.writeText(pixChaveAtual).then(()=>alert('Chave copiada!'));}
+async function excluirPix(id){if(!confirm('Remover chave?'))return;showLoading(true);await col('pixKeys').doc(id).delete();DB.pixKeys=DB.pixKeys.filter(x=>x.id!==id);showLoading(false);renderRecebimentos();}
+function enviarLinkPag(){const pid=document.getElementById('gw-pac').value;const link=document.getElementById('gw-link').value.trim();const val=document.getElementById('gw-valor').value;const p=DB.pacientes.find(x=>x.id===pid);if(!p||!p.tel){alert('Selecione paciente com WhatsApp.');return;}if(!link){alert('Cole o link.');return;}waMensagem(p.tel,`Olá ${p.nome}! 😊 Link para pagamento${val?' de '+fmtMoney(val):''}:\n${link}\n🌿`);}
+
+// ════════════════════════════════════════════════════════
+// WHATSAPP
+// ════════════════════════════════════════════════════════
+function waMensagem(tel,msg){const n=tel.replace(/\D/g,'');window.open(`https://wa.me/55${n}?text=${encodeURIComponent(msg)}`,'_blank');}
+function enviarWA(){const sel=document.getElementById('msg-pac-sel');const pid=sel.value;const p=DB.pacientes.find(x=>x.id===pid);if(!p||!p.tel){alert('Selecione paciente com WhatsApp.');return;}const msg=document.getElementById('msg-texto').value.trim();if(!msg){alert('Digite uma mensagem.');return;}waMensagem(p.tel,msg);}
+function copiarMsg(btn){const txt=btn.nextElementSibling.textContent.trim();navigator.clipboard.writeText(txt).then(()=>{btn.textContent='✅';setTimeout(()=>btn.textContent='Copiar',2000);});}
+
+// ════════════════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════════════════
+function renderDashboard(){const td=today(),mes=mesAtual();const ativos=DB.pacientes.filter(p=>p.status==='ativo').length;const hoje=DB.agendamentos.filter(a=>a.data===td&&a.status!=='cancelado').length;let pendentes=0;DB.pacientes.filter(p=>p.status==='ativo').forEach(p=>{if(!(DB.pagamentos[p.id]||[]).some(pg=>pg.data&&pg.data.startsWith(mes)))pendentes++;});const mesL=DB.lancamentos.filter(l=>l.data&&l.data.startsWith(mes));const saldo=mesL.filter(l=>l.tipo==='entrada').reduce((s,l)=>s+l.valor,0)-mesL.filter(l=>l.tipo==='saida').reduce((s,l)=>s+l.valor,0);document.getElementById('kpi-pac').textContent=ativos;document.getElementById('kpi-hoje').textContent=hoje;document.getElementById('kpi-pend').textContent=pendentes;document.getElementById('kpi-saldo').textContent='R$'+saldo.toFixed(0);const agHoje=DB.agendamentos.filter(a=>a.data===td&&a.status!=='cancelado').sort((a,b)=>a.hora.localeCompare(b.hora));const dashAg=document.getElementById('dash-agenda');dashAg.innerHTML=!agHoje.length?'<div class="empty-state"><div class="ei">📭</div><p>Nenhuma sessão hoje.</p></div>':agHoje.map(a=>{const p=DB.pacientes.find(x=>x.id===a.pacienteId);return`<div class="slot-item"><div class="slot-time">${a.hora}</div><div style="flex:1;"><div style="font-size:13px;font-weight:600;">${p?p.nome:'?'}</div><span class="slot-tipo tipo-${a.tipo}">${a.tipo}</span></div>${p&&p.tel?`<button class="wa-btn" onclick="waMensagem('${p.tel}','Olá ${p?p.nome:''}! Confirma consulta hoje às ${a.hora}? 😊')">📲</button>`:''}<span class="slot-status st-${a.status}">${a.status==='confirmado'?'✅':'⏳'}</span></div>`;}).join('');const alertas=[];const amanha=new Date();amanha.setDate(amanha.getDate()+1);const amStr=amanha.toISOString().slice(0,10);DB.pacientes.filter(p=>p.status==='ativo'&&p.pagdia==='20').forEach(p=>{const pagou=(DB.pagamentos[p.id]||[]).some(pg=>pg.data&&pg.data.startsWith(mes));if(!pagou){if(td>mes+'-20')alertas.push(`<div class="alert alert-danger"><div>⚠️ <b>${p.nome}</b> está em atraso.${p.tel?` <button class="btn btn-danger btn-xs" style="margin-left:6px;" onclick="waMensagem('${p.tel}','Olá ${p.nome}! Pagamento em atraso. 🙏')">📲 Cobrar</button>`:''}</div></div>`);else if(amStr===mes+'-20'||td===mes+'-19')alertas.push(`<div class="alert alert-warn"><div>🔔 Lembrar <b>${p.nome}</b> do pagamento de amanhã.${p.tel?` <button class="btn btn-wa btn-xs" style="margin-left:6px;" onclick="waMensagem('${p.tel}','Olá ${p.nome}! Pagamento vence amanhã, dia 20. 😊')">📲</button>`:''}</div></div>`);}});DB.agendamentos.filter(a=>a.data===td&&a.status==='aguardando').forEach(a=>{const p=DB.pacientes.find(x=>x.id===a.pacienteId);alertas.push(`<div class="alert alert-info"><div>⏳ <b>${p?p.nome:'?'}</b> às <b>${a.hora}</b> aguarda confirmação.${p&&p.tel?` <button class="btn btn-wa btn-xs" style="margin-left:6px;" onclick="waMensagem('${p.tel}','Olá ${p.nome}! Confirmando consulta hoje às ${a.hora}. Confirma? 😊')">📲</button>`:''}</div></div>`);});document.getElementById('dash-alertas').innerHTML=alertas.length?alertas.join(''):'<div class="alert alert-ok"><div>✅ Tudo em dia!</div></div>';}
+
+// ════════════════════════════════════════════════════════
+// RELÓGIO
+// ════════════════════════════════════════════════════════
+function updateClock(){const now=new Date();const h=now.getHours();document.getElementById('headerTime').textContent=now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});document.getElementById('headerDate').textContent=now.toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'});document.getElementById('dash-greeting').textContent=h<12?'Bom dia! ☀️':h<18?'Boa tarde! 🌤️':'Boa noite! 🌙';document.getElementById('dash-sub').textContent=now.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});}
+updateClock();setInterval(updateClock,30000);
+</script>
+</body>
+</html>
