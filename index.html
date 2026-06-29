@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -599,6 +600,11 @@ textarea.form-control{resize:vertical;min-height:72px;}
       </div>
       <div class="card"><div class="card-title">📅 Sessões de Hoje</div><div id="dash-agenda"><div class="empty-state"><div class="ei">📭</div><p>Nenhuma sessão hoje.</p></div></div></div>
       <div class="card"><div class="card-title">🔔 Alertas do Dia</div><div id="dash-alertas"><div class="alert alert-ok"><div>✅ Tudo em dia!</div></div></div></div>
+      <div class="card" id="card-resumo-dia">
+        <div class="card-title">🌙 Resumo do Dia</div>
+        <div id="resumo-dia-content"></div>
+        <button class="btn btn-wa btn-sm btn-full" style="margin-top:10px;" onclick="enviarResumoDia()">📲 Receber este resumo no meu WhatsApp</button>
+      </div>
       <div class="gcal-tip"><div style="font-size:18pt;flex-shrink:0;">📅</div><div>Use o botão <b>"Google Agenda"</b> no topo para enviar convites às pacientes — exatamente como você já faz hoje.</div></div>
     </div>
 
@@ -731,12 +737,14 @@ textarea.form-control{resize:vertical;min-height:72px;}
   <div class="form-group"><label class="form-label">E-mail</label><input class="form-control" type="email" id="np-email" placeholder="email@exemplo.com"></div>
   <div class="form-row">
     <div class="form-group"><label class="form-label">Atendimento</label><select class="form-control" id="np-tipo"><option value="presencial">Presencial</option><option value="online">Online</option><option value="ambos">Ambos</option></select></div>
-    <div class="form-group"><label class="form-label">Pagamento</label><select class="form-control" id="np-pagdia"><option value="20">Todo dia 20</option><option value="sessao">Por sessão</option><option value="outro">Outra data</option></select></div>
+    <div class="form-group"><label class="form-label">Pagamento</label><select class="form-control" id="np-pagdia" onchange="toggleOutraData()"><option value="20">Todo dia 20</option><option value="sessao">Por sessão</option><option value="outro">Outra data</option></select></div>
   </div>
+  <div class="form-group" id="np-outradata-wrap" style="display:none;"><label class="form-label">Qual dia do pagamento?</label><input class="form-control" type="number" id="np-outradata" min="1" max="31" placeholder="Ex: 5, 10, 15..."></div>
   <div class="form-row">
     <div class="form-group"><label class="form-label">Valor sessão (R$)</label><input class="form-control" type="number" id="np-valor" placeholder="0,00"></div>
-    <div class="form-group"><label class="form-label">Como chegou?</label><select class="form-control" id="np-origem"><option value="indicacao">Indicação</option><option value="instagram">Instagram</option><option value="google">Google</option><option value="outro">Outro</option></select></div>
+    <div class="form-group"><label class="form-label">Como chegou?</label><select class="form-control" id="np-origem" onchange="toggleIndicacao()"><option value="indicacao">Indicação</option><option value="instagram">Instagram</option><option value="google">Google</option><option value="outro">Outro</option></select></div>
   </div>
+  <div class="form-group" id="np-indicacao-wrap"><label class="form-label">Quem indicou?</label><input class="form-control" type="text" id="np-indicacao" placeholder="Nome de quem indicou"></div>
   <div class="form-group"><label class="form-label">Observações</label><textarea class="form-control" id="np-obs" placeholder="Notas relevantes..."></textarea></div>
   <button class="btn btn-primary btn-full" onclick="salvarPaciente()">💾 Salvar Paciente</button>
 </div>
@@ -935,26 +943,42 @@ function showLoading(v) {
 
 auth.onAuthStateChanged(async user => {
   showLoading(true);
-  if (user) {
-    currentUser = user;
-    userRef     = db.collection('users').doc(user.uid);
-    const doc   = await userRef.get();
-    if (!doc.exists) {
-      await userRef.set({
-        nome:      user.displayName || '',
-        email:     user.email,
-        createdAt: new Date().toISOString(),
-        paid:      false
-      });
+  try {
+    if (user) {
+      currentUser = user;
+      userRef = db.collection('users').doc(user.uid);
+      let userData;
+      try {
+        const doc = await Promise.race([
+          userRef.get(),
+          new Promise((_,reject) => setTimeout(() => reject(new Error('timeout')), 8000))
+        ]);
+        if (!doc.exists) {
+          await userRef.set({
+            nome: user.displayName || '',
+            email: user.email,
+            createdAt: new Date().toISOString(),
+            paid: false
+          });
+          userData = { nome: user.displayName || '', email: user.email, createdAt: new Date().toISOString(), paid: false };
+        } else {
+          userData = doc.data();
+        }
+      } catch(e) {
+        // Se Firestore falhar, libera acesso com trial padrão
+        userData = { nome: user.displayName || '', email: user.email, createdAt: new Date().toISOString(), paid: false };
+      }
+      if (checkTrial(userData)) {
+        showApp();
+      }
+    } else {
+      document.getElementById('auth-screen').style.display  = 'flex';
+      document.getElementById('app-screen').style.display   = 'none';
+      document.getElementById('trial-screen').style.display = 'none';
     }
-    const userData = (await userRef.get()).data();
-    if (checkTrial(userData)) {
-      showApp();
-    }
-  } else {
-    document.getElementById('auth-screen').style.display  = 'flex';
-    document.getElementById('app-screen').style.display   = 'none';
-    document.getElementById('trial-screen').style.display = 'none';
+  } catch(e) {
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display  = 'none';
   }
   showLoading(false);
 });
@@ -975,12 +999,15 @@ function authTab(tab, el) {
 }
 
 async function fazerLogin() {
+  if (!checkLoginLimit()) return;
   const email = document.getElementById('login-email').value.trim();
   const senha = document.getElementById('login-senha').value;
   const err   = document.getElementById('login-error');
+  if (!email || !senha) { err.textContent='Preencha e-mail e senha.'; err.style.display='block'; return; }
   try {
     showLoading(true);
     await auth.signInWithEmailAndPassword(email, senha);
+    loginAttempts = 0;
     err.style.display = 'none';
   } catch(e) {
     err.textContent   = 'E-mail ou senha incorretos.';
@@ -1030,6 +1057,55 @@ async function esqueceuSenha() {
 
 async function fazerLogout() {
   await auth.signOut();
+}
+
+// ════════════════════════════════════════════════════════
+// SEGURANÇA — Sanitização e proteção contra XSS
+// ════════════════════════════════════════════════════════
+function sanitize(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;')
+    .trim()
+    .slice(0, 500); // limite de 500 caracteres por campo
+}
+
+function sanitizeObj(obj) {
+  const clean = {};
+  for (const key in obj) {
+    if (typeof obj[key] === 'string') {
+      clean[key] = sanitize(obj[key]);
+    } else {
+      clean[key] = obj[key];
+    }
+  }
+  return clean;
+}
+
+// Proteção contra múltiplas tentativas de login
+let loginAttempts = 0;
+let loginBlockedUntil = 0;
+
+function checkLoginLimit() {
+  const now = Date.now();
+  if (now < loginBlockedUntil) {
+    const seconds = Math.ceil((loginBlockedUntil - now) / 1000);
+    alert(`Muitas tentativas. Tente novamente em ${seconds} segundos.`);
+    return false;
+  }
+  loginAttempts++;
+  if (loginAttempts >= 5) {
+    loginBlockedUntil = now + 60000; // bloqueia por 1 minuto
+    loginAttempts = 0;
+    alert('Muitas tentativas de login. Aguarde 1 minuto.');
+    return false;
+  }
+  return true;
 }
 
 // ════════════════════════════════════════════════════════
@@ -1113,6 +1189,111 @@ function popSelect(id) {
 }
 
 // ════════════════════════════════════════════════════════
+// CAMPOS CONDICIONAIS — Nova Paciente
+// ════════════════════════════════════════════════════════
+function toggleOutraData() {
+  const v = document.getElementById('np-pagdia').value;
+  document.getElementById('np-outradata-wrap').style.display = v==='outro' ? '' : 'none';
+}
+function toggleIndicacao() {
+  const v = document.getElementById('np-origem').value;
+  document.getElementById('np-indicacao-wrap').style.display = v==='indicacao' ? '' : 'none';
+}
+
+// ════════════════════════════════════════════════════════
+// RESUMO DO DIA — Assistente de fim de expediente
+// ════════════════════════════════════════════════════════
+function getResumoDia() {
+  const td = today();
+  const agHoje = DB.agendamentos.filter(a => a.data === td);
+  const realizadas = agHoje.filter(a => a.status === 'confirmado');
+  const canceladas = agHoje.filter(a => a.status === 'cancelado');
+  const aguardando = agHoje.filter(a => a.status === 'aguardando');
+
+  // Pacientes novas cadastradas hoje (provável ocupando horário vago)
+  const novasHoje = DB.pacientes.filter(p => p.criadoEm === td);
+
+  // Pagamentos recebidos hoje
+  let recebidoHoje = 0, qtdPagHoje = 0;
+  Object.keys(DB.pagamentos).forEach(pid => {
+    (DB.pagamentos[pid]||[]).forEach(pg => {
+      if (pg.data === td) { recebidoHoje += pg.valor; qtdPagHoje++; }
+    });
+  });
+
+  // Sessões de amanhã aguardando confirmação (pendência pra amanhã)
+  const amanha = new Date(); amanha.setDate(amanha.getDate()+1);
+  const amStr = amanha.toISOString().slice(0,10);
+  const amanhaPendentes = DB.agendamentos.filter(a => a.data === amStr && a.status === 'aguardando');
+
+  return { td, realizadas, canceladas, aguardando, novasHoje, recebidoHoje, qtdPagHoje, amanhaPendentes };
+}
+
+function renderResumoDia() {
+  const r = getResumoDia();
+  const nomeP = id => { const p = DB.pacientes.find(x=>x.id===id); return p?p.nome:'Paciente'; };
+  let html = '';
+
+  html += `<div class="alert alert-ok" style="margin-bottom:8px;"><div>✅ <b>${r.realizadas.length}</b> sessão(ões) realizada(s) hoje</div></div>`;
+
+  if (r.canceladas.length) {
+    html += `<div class="alert alert-danger" style="margin-bottom:8px;"><div>❌ <b>Cancelamentos de hoje:</b><br>${r.canceladas.map(a=>`• ${nomeP(a.pacienteId)} — ${a.hora}`).join('<br>')}</div></div>`;
+  }
+  if (r.aguardando.length) {
+    html += `<div class="alert alert-warn" style="margin-bottom:8px;"><div>⏳ <b>Ainda aguardando confirmação hoje:</b><br>${r.aguardando.map(a=>`• ${nomeP(a.pacienteId)} — ${a.hora}`).join('<br>')}</div></div>`;
+  }
+  if (r.novasHoje.length) {
+    html += `<div class="alert alert-info" style="margin-bottom:8px;"><div>🆕 <b>Pacientes novas hoje (horários vagos preenchidos):</b><br>${r.novasHoje.map(p=>`• ${p.nome}${p.indicacao?` (indicado por ${p.indicacao})`:''}`).join('<br>')}</div></div>`;
+  }
+  if (r.qtdPagHoje > 0) {
+    html += `<div class="alert alert-ok" style="margin-bottom:8px;"><div>💰 <b>${fmtMoney(r.recebidoHoje)}</b> recebidos hoje em ${r.qtdPagHoje} pagamento(s)</div></div>`;
+  }
+  if (r.amanhaPendentes.length) {
+    html += `<div class="alert alert-warn" style="margin-bottom:0;"><div>📋 <b>Para amanhã:</b> ${r.amanhaPendentes.length} sessão(ões) ainda aguardando confirmação</div></div>`;
+  }
+  if (!r.realizadas.length && !r.canceladas.length && !r.aguardando.length && !r.novasHoje.length && !r.qtdPagHoje && !r.amanhaPendentes.length) {
+    html = '<div class="empty-state"><div class="ei">🌙</div><p>Nenhuma movimentação registrada hoje ainda.</p></div>';
+  }
+
+  document.getElementById('resumo-dia-content').innerHTML = html;
+}
+
+function montarTextoResumoDia() {
+  const r = getResumoDia();
+  const nomeP = id => { const p = DB.pacientes.find(x=>x.id===id); return p?p.nome:'Paciente'; };
+  let txt = `🌙 *Resumo do seu dia — PsiCare*\n${fmtDate(r.td)}\n\n`;
+  txt += `✅ ${r.realizadas.length} sessão(ões) realizada(s)\n`;
+  if (r.canceladas.length) {
+    txt += `\n❌ *Cancelamentos:*\n` + r.canceladas.map(a=>`• ${nomeP(a.pacienteId)} às ${a.hora}`).join('\n') + '\n';
+  }
+  if (r.aguardando.length) {
+    txt += `\n⏳ *Aguardando confirmação:*\n` + r.aguardando.map(a=>`• ${nomeP(a.pacienteId)} às ${a.hora}`).join('\n') + '\n';
+  }
+  if (r.novasHoje.length) {
+    txt += `\n🆕 *Pacientes novas (horário vago ocupado):*\n` + r.novasHoje.map(p=>`• ${p.nome}${p.indicacao?` — indicado por ${p.indicacao}`:''}`).join('\n') + '\n';
+  }
+  if (r.qtdPagHoje) {
+    txt += `\n💰 Recebido hoje: ${fmtMoney(r.recebidoHoje)} (${r.qtdPagHoje} pagamento(s))\n`;
+  }
+  if (r.amanhaPendentes.length) {
+    txt += `\n📋 Para amanhã: ${r.amanhaPendentes.length} sessão(ões) aguardando confirmação\n`;
+  }
+  txt += `\n🌿 Tenha uma ótima noite!`;
+  return txt;
+}
+
+async function enviarResumoDia() {
+  const txt = montarTextoResumoDia();
+  let tel = (await userRef.get()).data().telPsicologa;
+  if (!tel) {
+    tel = prompt('Para receber este resumo direto no seu WhatsApp, informe seu número (com DDD):');
+    if (!tel) return;
+    await userRef.update({ telPsicologa: tel.trim() });
+  }
+  waMensagem(tel, txt);
+}
+
+// ════════════════════════════════════════════════════════
 // PACIENTES
 // ════════════════════════════════════════════════════════
 let curPid=null, pfiltro='todos', pbusca='';
@@ -1121,13 +1302,13 @@ async function salvarPaciente() {
   const nome=document.getElementById('np-nome').value.trim();
   if(!nome){alert('Informe o nome.');return;}
   showLoading(true);
-  const p={nome,tel:document.getElementById('np-tel').value.trim(),email:document.getElementById('np-email').value.trim(),nasc:document.getElementById('np-nasc').value,tipo:document.getElementById('np-tipo').value,pagdia:document.getElementById('np-pagdia').value,valor:document.getElementById('np-valor').value,origem:document.getElementById('np-origem').value,obs:document.getElementById('np-obs').value.trim(),status:'ativo',criadoEm:today()};
+  const p={nome,tel:document.getElementById('np-tel').value.trim(),email:document.getElementById('np-email').value.trim(),nasc:document.getElementById('np-nasc').value,tipo:document.getElementById('np-tipo').value,pagdia:document.getElementById('np-pagdia').value,outraData:document.getElementById('np-outradata').value||null,valor:document.getElementById('np-valor').value,origem:document.getElementById('np-origem').value,indicacao:document.getElementById('np-indicacao').value.trim(),obs:document.getElementById('np-obs').value.trim(),status:'ativo',criadoEm:today()};
   const ref=await col('pacientes').add(p);
   DB.pacientes.push({id:ref.id,...p});
   DB.pacientes.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   showLoading(false);
   closeModal('modal-pac');
-  ['np-nome','np-tel','np-email','np-nasc','np-valor','np-obs'].forEach(i=>document.getElementById(i).value='');
+  ['np-nome','np-tel','np-email','np-nasc','np-valor','np-obs','np-outradata','np-indicacao'].forEach(i=>document.getElementById(i).value='');
   renderPacientes(); renderDashboard();
 }
 
@@ -1150,9 +1331,9 @@ function abrirPaciente(id){
   document.getElementById('det-tel').textContent=p.tel||'—';
   document.getElementById('det-email').textContent=p.email||'—';
   document.getElementById('det-tipo').textContent=p.tipo||'—';
-  document.getElementById('det-pagdia').textContent=p.pagdia==='20'?'Todo dia 20':p.pagdia==='sessao'?'Por sessão':'Outra data';
+  document.getElementById('det-pagdia').textContent=p.pagdia==='20'?'Todo dia 20':p.pagdia==='sessao'?'Por sessão':p.pagdia==='outro'&&p.outraData?`Todo dia ${p.outraData}`:'Outra data';
   document.getElementById('det-valor').textContent=p.valor?fmtMoney(p.valor):'—';
-  document.getElementById('det-origem').textContent=p.origem||'—';
+  document.getElementById('det-origem').textContent=p.origem==='indicacao'&&p.indicacao?`Indicação — ${p.indicacao}`:(p.origem||'—');
   document.getElementById('det-obs').textContent=p.obs||'—';
   detTab('info',document.querySelector('.det-tab'));
   renderHistorico();renderFinPaciente();renderAgPaciente();
@@ -1227,7 +1408,7 @@ function copiarMsg(btn){const txt=btn.nextElementSibling.textContent.trim();navi
 // ════════════════════════════════════════════════════════
 // DASHBOARD
 // ════════════════════════════════════════════════════════
-function renderDashboard(){const td=today(),mes=mesAtual();const ativos=DB.pacientes.filter(p=>p.status==='ativo').length;const hoje=DB.agendamentos.filter(a=>a.data===td&&a.status!=='cancelado').length;let pendentes=0;DB.pacientes.filter(p=>p.status==='ativo').forEach(p=>{if(!(DB.pagamentos[p.id]||[]).some(pg=>pg.data&&pg.data.startsWith(mes)))pendentes++;});const mesL=DB.lancamentos.filter(l=>l.data&&l.data.startsWith(mes));const saldo=mesL.filter(l=>l.tipo==='entrada').reduce((s,l)=>s+l.valor,0)-mesL.filter(l=>l.tipo==='saida').reduce((s,l)=>s+l.valor,0);document.getElementById('kpi-pac').textContent=ativos;document.getElementById('kpi-hoje').textContent=hoje;document.getElementById('kpi-pend').textContent=pendentes;document.getElementById('kpi-saldo').textContent='R$'+saldo.toFixed(0);const agHoje=DB.agendamentos.filter(a=>a.data===td&&a.status!=='cancelado').sort((a,b)=>a.hora.localeCompare(b.hora));const dashAg=document.getElementById('dash-agenda');dashAg.innerHTML=!agHoje.length?'<div class="empty-state"><div class="ei">📭</div><p>Nenhuma sessão hoje.</p></div>':agHoje.map(a=>{const p=DB.pacientes.find(x=>x.id===a.pacienteId);return`<div class="slot-item"><div class="slot-time">${a.hora}</div><div style="flex:1;"><div style="font-size:13px;font-weight:600;">${p?p.nome:'?'}</div><span class="slot-tipo tipo-${a.tipo}">${a.tipo}</span></div>${p&&p.tel?`<button class="wa-btn" onclick="waMensagem('${p.tel}','Olá ${p?p.nome:''}! Confirma consulta hoje às ${a.hora}? 😊')">📲</button>`:''}<span class="slot-status st-${a.status}">${a.status==='confirmado'?'✅':'⏳'}</span></div>`;}).join('');const alertas=[];const amanha=new Date();amanha.setDate(amanha.getDate()+1);const amStr=amanha.toISOString().slice(0,10);DB.pacientes.filter(p=>p.status==='ativo'&&p.pagdia==='20').forEach(p=>{const pagou=(DB.pagamentos[p.id]||[]).some(pg=>pg.data&&pg.data.startsWith(mes));if(!pagou){if(td>mes+'-20')alertas.push(`<div class="alert alert-danger"><div>⚠️ <b>${p.nome}</b> está em atraso.${p.tel?` <button class="btn btn-danger btn-xs" style="margin-left:6px;" onclick="waMensagem('${p.tel}','Olá ${p.nome}! Pagamento em atraso. 🙏')">📲 Cobrar</button>`:''}</div></div>`);else if(amStr===mes+'-20'||td===mes+'-19')alertas.push(`<div class="alert alert-warn"><div>🔔 Lembrar <b>${p.nome}</b> do pagamento de amanhã.${p.tel?` <button class="btn btn-wa btn-xs" style="margin-left:6px;" onclick="waMensagem('${p.tel}','Olá ${p.nome}! Pagamento vence amanhã, dia 20. 😊')">📲</button>`:''}</div></div>`);}});DB.agendamentos.filter(a=>a.data===td&&a.status==='aguardando').forEach(a=>{const p=DB.pacientes.find(x=>x.id===a.pacienteId);alertas.push(`<div class="alert alert-info"><div>⏳ <b>${p?p.nome:'?'}</b> às <b>${a.hora}</b> aguarda confirmação.${p&&p.tel?` <button class="btn btn-wa btn-xs" style="margin-left:6px;" onclick="waMensagem('${p.tel}','Olá ${p.nome}! Confirmando consulta hoje às ${a.hora}. Confirma? 😊')">📲</button>`:''}</div></div>`);});document.getElementById('dash-alertas').innerHTML=alertas.length?alertas.join(''):'<div class="alert alert-ok"><div>✅ Tudo em dia!</div></div>';}
+function renderDashboard(){const td=today(),mes=mesAtual();const ativos=DB.pacientes.filter(p=>p.status==='ativo').length;const hoje=DB.agendamentos.filter(a=>a.data===td&&a.status!=='cancelado').length;let pendentes=0;DB.pacientes.filter(p=>p.status==='ativo').forEach(p=>{if(!(DB.pagamentos[p.id]||[]).some(pg=>pg.data&&pg.data.startsWith(mes)))pendentes++;});const mesL=DB.lancamentos.filter(l=>l.data&&l.data.startsWith(mes));const saldo=mesL.filter(l=>l.tipo==='entrada').reduce((s,l)=>s+l.valor,0)-mesL.filter(l=>l.tipo==='saida').reduce((s,l)=>s+l.valor,0);document.getElementById('kpi-pac').textContent=ativos;document.getElementById('kpi-hoje').textContent=hoje;document.getElementById('kpi-pend').textContent=pendentes;document.getElementById('kpi-saldo').textContent='R$'+saldo.toFixed(0);const agHoje=DB.agendamentos.filter(a=>a.data===td&&a.status!=='cancelado').sort((a,b)=>a.hora.localeCompare(b.hora));const dashAg=document.getElementById('dash-agenda');dashAg.innerHTML=!agHoje.length?'<div class="empty-state"><div class="ei">📭</div><p>Nenhuma sessão hoje.</p></div>':agHoje.map(a=>{const p=DB.pacientes.find(x=>x.id===a.pacienteId);return`<div class="slot-item"><div class="slot-time">${a.hora}</div><div style="flex:1;"><div style="font-size:13px;font-weight:600;">${p?p.nome:'?'}</div><span class="slot-tipo tipo-${a.tipo}">${a.tipo}</span></div>${p&&p.tel?`<button class="wa-btn" onclick="waMensagem('${p.tel}','Olá ${p?p.nome:''}! Confirma consulta hoje às ${a.hora}? 😊')">📲</button>`:''}<span class="slot-status st-${a.status}">${a.status==='confirmado'?'✅':'⏳'}</span></div>`;}).join('');const alertas=[];const amanha=new Date();amanha.setDate(amanha.getDate()+1);const amStr=amanha.toISOString().slice(0,10);DB.pacientes.filter(p=>p.status==='ativo'&&p.pagdia==='20').forEach(p=>{const pagou=(DB.pagamentos[p.id]||[]).some(pg=>pg.data&&pg.data.startsWith(mes));if(!pagou){if(td>mes+'-20')alertas.push(`<div class="alert alert-danger"><div>⚠️ <b>${p.nome}</b> está em atraso.${p.tel?` <button class="btn btn-danger btn-xs" style="margin-left:6px;" onclick="waMensagem('${p.tel}','Olá ${p.nome}! Pagamento em atraso. 🙏')">📲 Cobrar</button>`:''}</div></div>`);else if(amStr===mes+'-20'||td===mes+'-19')alertas.push(`<div class="alert alert-warn"><div>🔔 Lembrar <b>${p.nome}</b> do pagamento de amanhã.${p.tel?` <button class="btn btn-wa btn-xs" style="margin-left:6px;" onclick="waMensagem('${p.tel}','Olá ${p.nome}! Pagamento vence amanhã, dia 20. 😊')">📲</button>`:''}</div></div>`);}});DB.agendamentos.filter(a=>a.data===td&&a.status==='aguardando').forEach(a=>{const p=DB.pacientes.find(x=>x.id===a.pacienteId);alertas.push(`<div class="alert alert-info"><div>⏳ <b>${p?p.nome:'?'}</b> às <b>${a.hora}</b> aguarda confirmação.${p&&p.tel?` <button class="btn btn-wa btn-xs" style="margin-left:6px;" onclick="waMensagem('${p.tel}','Olá ${p.nome}! Confirmando consulta hoje às ${a.hora}. Confirma? 😊')">📲</button>`:''}</div></div>`);});document.getElementById('dash-alertas').innerHTML=alertas.length?alertas.join(''):'<div class="alert alert-ok"><div>✅ Tudo em dia!</div></div>';renderResumoDia();}
 
 // ════════════════════════════════════════════════════════
 // RELÓGIO
